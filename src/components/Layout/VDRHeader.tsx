@@ -71,7 +71,7 @@ export const VDRHeader = ({ onToggleSidebar, sidebarCollapsed }: VDRHeaderProps)
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">Admin User</p>
                 <p className="text-xs text-muted-foreground">
-                  admin@satus-real.de
+                  admin@test-company.de
                 </p>
               </div>
             </DropdownMenuLabel>

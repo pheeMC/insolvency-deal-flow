@@ -82,9 +82,9 @@ export default function Dashboard() {
       {/* Deal Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Labforward GmbH - Asset Deal</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Test GmbH - Asset Deal</h1>
           <p className="text-muted-foreground mt-2">
-            Insolvency proceeding data room managed by SATUS Real Estate
+            Insolvency proceeding data room managed by Deal Administrator
           </p>
         </div>
         <div className="flex items-center gap-3">

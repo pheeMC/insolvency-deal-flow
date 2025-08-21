@@ -8,6 +8,9 @@ import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
 import QA from "./pages/QA";
 import Bids from "./pages/Bids";
+import Users from "./pages/Users";
+import Timeline from "./pages/Timeline";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => (
             <Route path="documents/:folder" element={<Documents />} />
             <Route path="qa" element={<QA />} />
             <Route path="bids" element={<Bids />} />
+            <Route path="users" element={<Users />} />
+            <Route path="timeline" element={<Timeline />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

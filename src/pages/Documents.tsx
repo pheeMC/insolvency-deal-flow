@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import {
   FolderOpen,
   FileText,
@@ -14,7 +17,14 @@ import {
   Lock,
   Users,
   Calendar,
+  FileSpreadsheet,
+  FileImage,
+  ArrowLeft,
+  Grid3X3,
+  List,
+  Activity
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Document {
   id: string;
@@ -177,8 +187,19 @@ const documentStructure: Document[] = [
 ];
 
 export default function Documents() {
+  const { folder } = useParams();
+  const navigate = useNavigate();
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['00', '01']);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  
+  const isInFolder = !!folder;
+  const currentFolder = documentStructure.find(f => f.id === folder);
+  
+  const displayDocuments = isInFolder 
+    ? currentFolder?.children || []
+    : documentStructure;
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev =>
@@ -273,19 +294,53 @@ export default function Documents() {
     );
   };
 
+  const handleFolderClick = (folderId: string) => {
+    navigate(`/documents/${folderId}`);
+  };
+
+  const handleBackClick = () => {
+    navigate('/documents');
+  };
+
+  const getFileIcon = (type: string, name: string) => {
+    if (type === 'folder') return FolderOpen;
+    if (name.endsWith('.pdf')) return FileText;
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) return FileSpreadsheet;
+    if (name.endsWith('.jpg') || name.endsWith('.png')) return FileImage;
+    return FileText;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document Repository</h1>
-          <p className="text-muted-foreground mt-2">
-            Secure access to deal documentation with watermarking and access controls
-          </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {isInFolder && (
+            <Button variant="ghost" size="sm" onClick={handleBackClick}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Folders
+            </Button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold">
+              {isInFolder ? currentFolder?.name || 'Documents' : 'Document Repository'}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isInFolder 
+                ? 'Secure document access with watermarking and audit trails'
+                : 'Secure access to deal documentation with watermarking and access controls'
+              }
+            </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2">
             <Filter className="h-4 w-4" />
             Filter
+          </Button>
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Bulk Download
           </Button>
           <Button className="gap-2">
             <Upload className="h-4 w-4" />

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { documentsService } from '@/services/documentsService';
+import { Document } from '@/types/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,180 +28,36 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Document {
-  id: string;
-  name: string;
-  type: 'file' | 'folder';
-  size?: string;
-  modified: string;
-  modifiedBy: string;
-  access: 'full' | 'restricted' | 'clean-team';
-  watermark: boolean;
-  children?: Document[];
-}
-
-const documentStructure: Document[] = [
-  {
-    id: '00',
-    name: '00_Admin',
-    type: 'folder',
-    modified: '2024-01-15',
-    modifiedBy: 'Deal Admin',
-    access: 'restricted',
-    watermark: true,
-    children: [
-      {
-        id: '00-01',
-        name: 'NDA_Template.pdf',
-        type: 'file',
-        size: '245 KB',
-        modified: '2024-01-15',
-        modifiedBy: 'Legal Counsel',
-        access: 'full',
-        watermark: true,
-      },
-      {
-        id: '00-02',
-        name: 'Deal_Overview_Presentation.pdf',
-        type: 'file',
-        size: '2.1 MB',
-        modified: '2024-01-14',
-        modifiedBy: 'M&A Advisor',
-        access: 'full',
-        watermark: true,
-      },
-    ],
-  },
-  {
-    id: '01',
-    name: '01_Corporate',
-    type: 'folder',
-    modified: '2024-01-12',
-    modifiedBy: 'Corporate Secretary',
-    access: 'full',
-    watermark: true,
-    children: [
-      {
-        id: '01-01',
-        name: 'Articles_of_Incorporation.pdf',
-        type: 'file',
-        size: '1.2 MB',
-        modified: '2024-01-12',
-        modifiedBy: 'Corporate Secretary',
-        access: 'full',
-        watermark: true,
-      },
-      {
-        id: '01-02',
-        name: 'Board_Resolutions_2023.pdf',
-        type: 'file',
-        size: '856 KB',
-        modified: '2024-01-10',
-        modifiedBy: 'Corporate Secretary',
-        access: 'full',
-        watermark: true,
-      },
-    ],
-  },
-  {
-    id: '02',
-    name: '02_Financials',
-    type: 'folder',
-    modified: '2024-01-16',
-    modifiedBy: 'CFO Office',
-    access: 'full',
-    watermark: true,
-    children: [
-      {
-        id: '02-01',
-        name: 'Audited_Financial_Statements_2023.pdf',
-        type: 'file',
-        size: '3.4 MB',
-        modified: '2024-01-16',
-        modifiedBy: 'External Auditor',
-        access: 'full',
-        watermark: true,
-      },
-      {
-        id: '02-02',
-        name: 'Management_Accounts_Q3_2024.xlsx',
-        type: 'file',
-        size: '1.8 MB',
-        modified: '2024-01-15',
-        modifiedBy: 'Finance Director',
-        access: 'full',
-        watermark: true,
-      },
-    ],
-  },
-  {
-    id: '05',
-    name: '05_HR',
-    type: 'folder',
-    modified: '2024-01-11',
-    modifiedBy: 'HR Director',
-    access: 'clean-team',
-    watermark: true,
-    children: [
-      {
-        id: '05-01',
-        name: 'Employee_List_Anonymized.xlsx',
-        type: 'file',
-        size: '892 KB',
-        modified: '2024-01-11',
-        modifiedBy: 'HR Director',
-        access: 'clean-team',
-        watermark: true,
-      },
-    ],
-  },
-  {
-    id: '90',
-    name: '90_InsO',
-    type: 'folder',
-    modified: '2024-01-17',
-    modifiedBy: 'Insolvency Administrator',
-    access: 'restricted',
-    watermark: true,
-    children: [
-      {
-        id: '90-01',
-        name: 'Insolvency_Report_2024.pdf',
-        type: 'file',
-        size: '4.2 MB',
-        modified: '2024-01-17',
-        modifiedBy: 'Insolvency Administrator',
-        access: 'restricted',
-        watermark: true,
-      },
-      {
-        id: '90-02',
-        name: 'Asset_Valuation_Report.pdf',
-        type: 'file',
-        size: '2.8 MB',
-        modified: '2024-01-16',
-        modifiedBy: 'Valuation Expert',
-        access: 'restricted',
-        watermark: true,
-      },
-    ],
-  },
-];
-
 export default function Documents() {
   const { folder } = useParams();
   const navigate = useNavigate();
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['00', '01']);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [loading, setLoading] = useState(true);
   
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const docs = await documentsService.getDocuments(folder);
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Failed to fetch documents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+  }, [folder]);
+
   const isInFolder = !!folder;
-  const currentFolder = documentStructure.find(f => f.id === folder);
+  const currentFolder = documents.find(f => f.id === folder);
   
   const displayDocuments = isInFolder 
     ? currentFolder?.children || []
-    : documentStructure;
+    : documents;
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev =>
@@ -279,7 +137,7 @@ export default function Documents() {
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
                   <Eye className="h-3 w-3" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleDownload(doc.id)}>
                   <Download className="h-3 w-3" />
                 </Button>
               </div>
@@ -310,6 +168,48 @@ export default function Documents() {
     return FileText;
   };
 
+  const handleDownload = async (documentId: string) => {
+    try {
+      const blob = await documentsService.downloadDocument(documentId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = selectedDocument?.name || 'document';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download document:', error);
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    try {
+      const documentIds = documents.map(doc => doc.id);
+      const blob = await documentsService.bulkDownload(documentIds);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'documents.zip';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to bulk download:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading documents...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -338,7 +238,7 @@ export default function Documents() {
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleBulkDownload}>
             <Download className="h-4 w-4" />
             Bulk Download
           </Button>
@@ -370,9 +270,9 @@ export default function Documents() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="space-y-1">
-                {documentStructure.map(doc => renderDocument(doc))}
-              </div>
+                <div className="space-y-1">
+                  {documents.map(doc => renderDocument(doc))}
+                </div>
             </CardContent>
           </Card>
         </div>
@@ -417,7 +317,7 @@ export default function Documents() {
                     <Eye className="h-4 w-4" />
                     View Document
                   </Button>
-                  <Button variant="outline" className="w-full gap-2">
+                  <Button variant="outline" className="w-full gap-2" onClick={() => selectedDocument && handleDownload(selectedDocument.id)}>
                     <Download className="h-4 w-4" />
                     Download
                   </Button>

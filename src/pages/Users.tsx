@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usersService } from '@/services/usersService';
+import { User } from '@/types/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,93 +26,54 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'owner' | 'insolvency-admin' | 'ma-advisor' | 'deal-admin' | 'bidder-lead' | 'bidder-member' | 'clean-team' | 'viewer';
-  organization: string;
-  status: 'active' | 'pending' | 'suspended';
-  lastLogin?: string;
-  joinedAt: string;
-  accessLevel: string[];
-}
-
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@test-company.de',
-    role: 'owner',
-    organization: 'Test GmbH',
-    status: 'active',
-    lastLogin: '2024-01-17T10:30:00Z',
-    joinedAt: '2024-01-01T00:00:00Z',
-    accessLevel: ['All Documents', 'Admin Panel', 'User Management'],
-  },
-  {
-    id: '2',
-    name: 'Dr. Mueller',
-    email: 'mueller@insolvency-admin.de',
-    role: 'insolvency-admin',
-    organization: 'Insolvency Court',
-    status: 'active',
-    lastLogin: '2024-01-17T09:15:00Z',
-    joinedAt: '2024-01-02T00:00:00Z',
-    accessLevel: ['90_InsO', 'Bid Management', 'Reports'],
-  },
-  {
-    id: '3',
-    name: 'Sarah Johnson',
-    email: 'sarah@ma-advisors.com',
-    role: 'ma-advisor',
-    organization: 'M&A Advisors Ltd',
-    status: 'active',
-    lastLogin: '2024-01-16T16:45:00Z',
-    joinedAt: '2024-01-03T00:00:00Z',
-    accessLevel: ['Documents', 'Q&A Management', 'Bid Review'],
-  },
-  {
-    id: '4',
-    name: 'Michael Chen',
-    email: 'mchen@strategic-alpha.com',
-    role: 'bidder-lead',
-    organization: 'Strategic Investor Alpha',
-    status: 'active',
-    lastLogin: '2024-01-17T08:00:00Z',
-    joinedAt: '2024-01-05T00:00:00Z',
-    accessLevel: ['Phase 2 Documents', 'Q&A Submission', 'Bid Management'],
-  },
-  {
-    id: '5',
-    name: 'Lisa Brown',
-    email: 'lisa@financial-beta.com',
-    role: 'bidder-member',
-    organization: 'Financial Investor Beta',
-    status: 'pending',
-    joinedAt: '2024-01-16T00:00:00Z',
-    accessLevel: ['Phase 1 Documents', 'Q&A View'],
-  },
-  {
-    id: '6',
-    name: 'Robert Wilson',
-    email: 'rwilson@cleanteam.com',
-    role: 'clean-team',
-    organization: 'HR Clean Team',
-    status: 'active',
-    lastLogin: '2024-01-15T14:20:00Z',
-    joinedAt: '2024-01-10T00:00:00Z',
-    accessLevel: ['05_HR', 'Employee Data', 'Clean Team Reports'],
-  },
-];
-
 export default function Users() {
-  const [selectedUser, setSelectedUser] = useState<User | null>(mockUsers[0]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     role: 'all',
     status: 'all',
     organization: 'all',
   });
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await usersService.getUsers(filter);
+        setUsers(response.data);
+        if (response.data.length > 0 && !selectedUser) {
+          setSelectedUser(response.data[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [filter]);
+
+  const handleSuspendUser = async (userId: string) => {
+    try {
+      const updatedUser = await usersService.updateUserStatus(userId, 'suspended');
+      setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      if (selectedUser?.id === userId) {
+        setSelectedUser(updatedUser);
+      }
+    } catch (error) {
+      console.error('Failed to suspend user:', error);
+    }
+  };
+
+  const handleSendMessage = async (userId: string) => {
+    try {
+      // This would typically open a message compose modal
+      await usersService.sendMessage(userId, 'Subject', 'Message content');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
+  };
 
   const getRoleBadgeVariant = (role: User['role']) => {
     switch (role) {
@@ -171,6 +134,19 @@ export default function Users() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading users...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -227,12 +203,12 @@ export default function Users() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UsersIcon className="h-5 w-5" />
-                Team Members ({mockUsers.length})
+                Team Members ({users.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="space-y-1">
-                {mockUsers.map(user => (
+                {users.map(user => (
                   <div
                     key={user.id}
                     className={`
@@ -351,7 +327,7 @@ export default function Users() {
                     <Edit className="h-3 w-3" />
                     Edit User
                   </Button>
-                  <Button variant="outline" className="w-full gap-2" size="sm">
+                  <Button variant="outline" className="w-full gap-2" size="sm" onClick={() => handleSendMessage(selectedUser.id)}>
                     <Mail className="h-3 w-3" />
                     Send Message
                   </Button>
@@ -360,7 +336,7 @@ export default function Users() {
                     View Activity
                   </Button>
                   {selectedUser.status !== 'suspended' && (
-                    <Button variant="destructive" className="w-full gap-2" size="sm">
+                    <Button variant="destructive" className="w-full gap-2" size="sm" onClick={() => handleSuspendUser(selectedUser.id)}>
                       <Trash2 className="h-3 w-3" />
                       Suspend User
                     </Button>

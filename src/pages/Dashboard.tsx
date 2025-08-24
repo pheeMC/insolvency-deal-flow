@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,96 +18,130 @@ import {
   Calendar,
   Activity
 } from 'lucide-react';
+import { dashboardService } from '@/services/dashboardService';
+import { DashboardStats, RecentActivity, DealMetrics } from '@/types/api';
 
 export default function Dashboard() {
-  const stats = [
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [dealMetrics, setDealMetrics] = useState<DealMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [stats, activity, metrics] = await Promise.all([
+          dashboardService.getStats(),
+          dashboardService.getRecentActivity(),
+          dashboardService.getDealMetrics(),
+        ]);
+        
+        setDashboardStats(stats);
+        setRecentActivity(activity);
+        setDealMetrics(metrics);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const stats = dashboardStats ? [
     {
       title: 'Total Documents',
-      value: '247',
-      change: '+12%',
+      value: dashboardStats.totalDocuments.toString(),
+      change: dashboardStats.changeMetrics.documents,
       icon: FileText,
       color: 'text-primary',
     },
     {
       title: 'Active Users',
-      value: '18',
-      change: '+3',
+      value: dashboardStats.activeUsers.toString(),
+      change: dashboardStats.changeMetrics.users,
       icon: Users,
       color: 'text-success',
     },
     {
       title: 'Q&A Threads',
-      value: '42',
-      change: '+8',
+      value: dashboardStats.qaThreads.toString(),
+      change: dashboardStats.changeMetrics.qa,
       icon: MessageCircle,
       color: 'text-warning',
     },
     {
       title: 'Submitted Bids',
-      value: '6',
-      change: '+2',
+      value: dashboardStats.submittedBids.toString(),
+      change: dashboardStats.changeMetrics.bids,
       icon: Gavel,
       color: 'text-primary',
     },
-  ];
+  ] : [];
 
-  const recentActivity = [
-    {
-      type: 'document',
-      title: 'Financial Statements Q3 2024 uploaded',
-      user: 'M&A Advisor',
-      time: '2 hours ago',
-      icon: FileText,
-    },
-    {
-      type: 'qa',
-      title: 'New question about employee contracts',
-      user: 'Bidder Alpha Lead',
-      time: '4 hours ago',
-      icon: MessageCircle,
-    },
-    {
-      type: 'bid',
-      title: 'Bid revision submitted',
-      user: 'Strategic Investor B',
-      time: '1 day ago',
-      icon: Gavel,
-    },
-    {
-      type: 'access',
-      title: 'New team member added',
-      user: 'Deal Admin',
-      time: '2 days ago',
-      icon: Users,
-    },
-  ];
-
-  const dealMetrics = [
+  const dealMetricsData = dealMetrics ? [
     {
       label: 'Enterprise Value',
-      value: '€125M',
+      value: dealMetrics.enterpriseValue,
       subtext: 'Indicative range: €100M - €150M',
       icon: Euro,
     },
     {
       label: 'Deal Type',
-      value: 'Asset Deal',
+      value: dealMetrics.dealType,
       subtext: 'Insolvency Proceedings',
       icon: Building2,
     },
     {
       label: 'Timeline',
-      value: '14 Days',
+      value: dealMetrics.timeline,
       subtext: 'Until NBO deadline',
       icon: Calendar,
     },
     {
       label: 'Bidders',
-      value: '8 Active',
+      value: dealMetrics.bidders,
       subtext: '3 Strategic, 5 Financial',
       icon: Activity,
     },
-  ];
+  ] : [];
+
+  const handleExportReport = async () => {
+    try {
+      const blob = await dashboardService.exportActivityReport();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'activity-report.pdf';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export report:', error);
+    }
+  };
+
+  const handleViewAccessLogs = async () => {
+    try {
+      await dashboardService.getAccessLogs();
+      // Navigate to access logs view or show in modal
+    } catch (error) {
+      console.error('Failed to fetch access logs:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -121,17 +156,17 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="gap-2">
             <Clock className="h-3 w-3" />
-            Phase: NBO
+            Phase: {dealMetrics?.phase || 'NBO'}
           </Badge>
           <Badge variant="secondary">
-            14 days remaining
+            {dealMetrics?.daysRemaining || 14} days remaining
           </Badge>
         </div>
       </div>
 
       {/* Key Deal Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {dealMetrics.map((metric) => {
+        {dealMetricsData.map((metric) => {
           const IconComponent = metric.icon;
           return (
             <Card key={metric.label} className="vdr-card-hover">
@@ -222,17 +257,20 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => {
-                const IconComponent = activity.icon;
+              {recentActivity.map((activity) => {
+                // Map icon string to actual icon component
+                const IconComponent = activity.type === 'document' ? FileText :
+                                     activity.type === 'qa' ? MessageCircle :
+                                     activity.type === 'bid' ? Gavel : Users;
                 return (
-                  <div key={index} className="flex gap-3 items-start">
+                  <div key={activity.id} className="flex gap-3 items-start">
                     <div className="bg-primary/10 p-2 rounded-full">
                       <IconComponent className="h-3 w-3 text-primary" />
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        by {activity.user} · {activity.time}
+                        by {activity.user} · {new Date(activity.time).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -279,11 +317,11 @@ export default function Dashboard() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start gap-2" variant="outline">
+            <Button className="w-full justify-start gap-2" variant="outline" onClick={handleExportReport}>
               <Download className="h-4 w-4" />
               Export Activity Report
             </Button>
-            <Button className="w-full justify-start gap-2" variant="outline">
+            <Button className="w-full justify-start gap-2" variant="outline" onClick={handleViewAccessLogs}>
               <Eye className="h-4 w-4" />
               View Access Logs
             </Button>

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { qaService } from '@/services/qaService';
+import { QAThread } from '@/types/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,70 +27,60 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface QAThread {
-  id: string;
-  category: string;
-  title: string;
-  question: string;
-  answer?: string;
-  status: 'new' | 'in-review' | 'answered' | 'published';
-  priority: 'low' | 'medium' | 'high';
-  askedBy: string;
-  askedAt: string;
-  answeredBy?: string;
-  answeredAt?: string;
-  visibility: 'all-bidders' | 'specific-bidder' | 'internal';
-  attachments?: string[];
-}
-
-const mockThreads: QAThread[] = [
-  {
-    id: '1',
-    category: 'Legal',
-    title: 'Employee Transfer Obligations',
-    question: 'Can you provide details about the obligations under §613a BGB regarding employee transfers in the asset purchase?',
-    answer: 'Under §613a BGB, all employment contracts automatically transfer to the purchaser. We have prepared a detailed analysis including individual employee consent requirements.',
-    status: 'answered',
-    priority: 'high',
-    askedBy: 'Strategic Investor A',
-    askedAt: '2024-01-16T09:30:00Z',
-    answeredBy: 'Legal Counsel',
-    answeredAt: '2024-01-16T14:20:00Z',
-    visibility: 'all-bidders',
-  },
-  {
-    id: '2',
-    category: 'Financial',
-    title: 'Working Capital Adjustments',
-    question: 'What is the methodology for calculating working capital adjustments at closing?',
-    status: 'in-review',
-    priority: 'medium',
-    askedBy: 'Financial Investor B',
-    askedAt: '2024-01-16T11:15:00Z',
-    visibility: 'all-bidders',
-  },
-  {
-    id: '3',
-    category: 'Technical',
-    title: 'IT Infrastructure Dependencies',
-    question: 'Are there any shared IT systems with other group companies that would require transition agreements?',
-    status: 'new',
-    priority: 'medium',
-    askedBy: 'Strategic Investor C',
-    askedAt: '2024-01-16T16:45:00Z',
-    visibility: 'specific-bidder',
-  },
-];
-
 export default function QA() {
-  const [selectedThread, setSelectedThread] = useState<QAThread | null>(mockThreads[0]);
+  const [threads, setThreads] = useState<QAThread[]>([]);
+  const [selectedThread, setSelectedThread] = useState<QAThread | null>(null);
   const [newQuestion, setNewQuestion] = useState('');
   const [newAnswer, setNewAnswer] = useState('');
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     status: 'all',
     category: 'all',
     priority: 'all',
   });
+
+  useEffect(() => {
+    const fetchThreads = async () => {
+      try {
+        const response = await qaService.getThreads(filter);
+        setThreads(response.data);
+        if (response.data.length > 0 && !selectedThread) {
+          setSelectedThread(response.data[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Q&A threads:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThreads();
+  }, [filter]);
+
+  const handleAnswerSubmit = async (publishTo: 'all-bidders' | 'specific-bidder' | 'draft' = 'draft') => {
+    if (!selectedThread || !newAnswer.trim()) return;
+
+    try {
+      const updatedThread = await qaService.answerThread(selectedThread.id, newAnswer, publishTo);
+      setThreads(prev => prev.map(t => t.id === updatedThread.id ? updatedThread : t));
+      setSelectedThread(updatedThread);
+      setNewAnswer('');
+    } catch (error) {
+      console.error('Failed to submit answer:', error);
+    }
+  };
+
+  const handleStatusUpdate = async (threadId: string, status: QAThread['status']) => {
+    try {
+      const updatedThread = await qaService.updateStatus(threadId, status);
+      setThreads(prev => prev.map(t => t.id === updatedThread.id ? updatedThread : t));
+      if (selectedThread?.id === threadId) {
+        setSelectedThread(updatedThread);
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
 
   const getStatusBadgeVariant = (status: QAThread['status']) => {
     switch (status) {
@@ -124,6 +116,19 @@ export default function QA() {
       minute: '2-digit',
     });
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading Q&A threads...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -182,12 +187,12 @@ export default function QA() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Questions ({mockThreads.length})
+                Questions ({threads.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="space-y-1">
-                {mockThreads.map(thread => (
+                {threads.map(thread => (
                   <div
                     key={thread.id}
                     className={`
@@ -296,14 +301,14 @@ export default function QA() {
                       rows={4}
                     />
                     <div className="flex gap-3">
-                      <Button size="sm" className="gap-2">
+                      <Button size="sm" className="gap-2" onClick={() => handleAnswerSubmit('draft')}>
                         <Send className="h-3 w-3" />
                         Save Draft
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => handleAnswerSubmit('all-bidders')}>
                         Publish to All Bidders
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => handleAnswerSubmit('specific-bidder')}>
                         Send to Specific Bidder
                       </Button>
                     </div>
@@ -313,12 +318,12 @@ export default function QA() {
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t">
                   {selectedThread.status === 'new' && (
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(selectedThread.id, 'in-review')}>
                       Move to Review
                     </Button>
                   )}
                   {selectedThread.status === 'answered' && (
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleStatusUpdate(selectedThread.id, 'published')}>
                       Publish to FAQ
                     </Button>
                   )}

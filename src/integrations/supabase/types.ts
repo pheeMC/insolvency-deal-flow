@@ -14,7 +14,320 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      bids: {
+        Row: {
+          amount: number | null
+          attachments: string[] | null
+          bidder_name: string
+          bidder_type: string | null
+          conditions: string[] | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          phase: string | null
+          status: string | null
+          submitted_by: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          attachments?: string[] | null
+          bidder_name: string
+          bidder_type?: string | null
+          conditions?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          phase?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          attachments?: string[] | null
+          bidder_name?: string
+          bidder_type?: string | null
+          conditions?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          phase?: string | null
+          status?: string | null
+          submitted_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      deal_settings: {
+        Row: {
+          audit_logging: boolean | null
+          bid_notifications: boolean | null
+          closing_expected: string | null
+          created_at: string | null
+          deal_name: string
+          deal_type: string | null
+          download_restrictions: boolean | null
+          email_alerts: boolean | null
+          final_bid_deadline: string | null
+          id: string
+          nbo_deadline: string | null
+          phase: string | null
+          qa_notifications: boolean | null
+          updated_at: string | null
+          watermark_enabled: boolean | null
+        }
+        Insert: {
+          audit_logging?: boolean | null
+          bid_notifications?: boolean | null
+          closing_expected?: string | null
+          created_at?: string | null
+          deal_name: string
+          deal_type?: string | null
+          download_restrictions?: boolean | null
+          email_alerts?: boolean | null
+          final_bid_deadline?: string | null
+          id?: string
+          nbo_deadline?: string | null
+          phase?: string | null
+          qa_notifications?: boolean | null
+          updated_at?: string | null
+          watermark_enabled?: boolean | null
+        }
+        Update: {
+          audit_logging?: boolean | null
+          bid_notifications?: boolean | null
+          closing_expected?: string | null
+          created_at?: string | null
+          deal_name?: string
+          deal_type?: string | null
+          download_restrictions?: boolean | null
+          email_alerts?: boolean | null
+          final_bid_deadline?: string | null
+          id?: string
+          nbo_deadline?: string | null
+          phase?: string | null
+          qa_notifications?: boolean | null
+          updated_at?: string | null
+          watermark_enabled?: boolean | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          access_level: string | null
+          created_at: string | null
+          file_path: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          size: string | null
+          type: string
+          updated_at: string | null
+          uploaded_by: string | null
+          watermark: boolean | null
+        }
+        Insert: {
+          access_level?: string | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          size?: string | null
+          type: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          watermark?: boolean | null
+        }
+        Update: {
+          access_level?: string | null
+          created_at?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          size?: string | null
+          type?: string
+          updated_at?: string | null
+          uploaded_by?: string | null
+          watermark?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          access_level: string[] | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          last_login: string | null
+          organization: string | null
+          role: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_level?: string[] | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_login?: string | null
+          organization?: string | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_level?: string[] | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_login?: string | null
+          organization?: string | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      qa_threads: {
+        Row: {
+          answer: string | null
+          answered_by: string | null
+          asked_by: string
+          attachments: string[] | null
+          category: string
+          created_at: string | null
+          id: string
+          priority: string | null
+          question: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          answer?: string | null
+          answered_by?: string | null
+          asked_by: string
+          attachments?: string[] | null
+          category: string
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          question: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          answer?: string | null
+          answered_by?: string | null
+          asked_by?: string
+          attachments?: string[] | null
+          category?: string
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          question?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      timeline_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_date: string
+          event_time: string | null
+          id: string
+          participants: string[] | null
+          status: string | null
+          title: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_date: string
+          event_time?: string | null
+          id?: string
+          participants?: string[] | null
+          status?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_date?: string
+          event_time?: string | null
+          id?: string
+          participants?: string[] | null
+          status?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

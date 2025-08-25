@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { documentsService } from '@/services/documentsService';
 import { Document } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,

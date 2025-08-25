@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { usersService } from '@/services/usersService';
 import { User } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { toast } from 'sonner';
 import { UserInviteModal } from '@/components/modals/UserInviteModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

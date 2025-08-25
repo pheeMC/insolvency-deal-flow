@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { usersService } from '@/services/usersService';
 import { User } from '@/types/api';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { UserInviteModal } from '@/components/modals/UserInviteModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,7 @@ export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [filter, setFilter] = useState({
     role: 'all',
     status: 'all',
@@ -56,23 +59,35 @@ export default function Users() {
 
   const handleSuspendUser = async (userId: string) => {
     try {
+      const toastId = showLoadingToast('Suspending user...');
       const updatedUser = await usersService.updateUserStatus(userId, 'suspended');
       setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
       if (selectedUser?.id === userId) {
         setSelectedUser(updatedUser);
       }
+      toast.dismiss(toastId);
+      showSuccessToast('User suspended successfully');
     } catch (error) {
       console.error('Failed to suspend user:', error);
+      showErrorToast('Failed to suspend user');
     }
   };
 
   const handleSendMessage = async (userId: string) => {
     try {
+      const toastId = showLoadingToast('Sending message...');
       // This would typically open a message compose modal
       await usersService.sendMessage(userId, 'Subject', 'Message content');
+      toast.dismiss(toastId);
+      showSuccessToast('Message sent successfully');
     } catch (error) {
       console.error('Failed to send message:', error);
+      showErrorToast('Failed to send message');
     }
+  };
+
+  const handleInviteComplete = (user: User) => {
+    setUsers(prev => [user, ...prev]);
   };
 
   const getRoleBadgeVariant = (role: User['role']) => {
@@ -156,7 +171,7 @@ export default function Users() {
             Manage user access, roles, and permissions for the data room
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setInviteModalOpen(true)}>
           <UserPlus className="h-4 w-4" />
           Invite User
         </Button>
@@ -356,6 +371,12 @@ export default function Users() {
           )}
         </div>
       </div>
+
+      <UserInviteModal
+        open={inviteModalOpen}
+        onOpenChange={setInviteModalOpen}
+        onInviteComplete={handleInviteComplete}
+      />
     </div>
   );
 }

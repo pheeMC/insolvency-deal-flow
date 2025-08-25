@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { settingsService } from '@/services/settingsService';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,11 +57,49 @@ export default function Settings() {
     allowedFileTypes: '.pdf,.docx,.xlsx,.pptx',
   });
 
+  const [saving, setSaving] = useState(false);
+
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    try {
+      const toastId = showLoadingToast('Saving settings...');
+      
+      await settingsService.updateSettings({
+        dealName: settings.dealName,
+        dealType: 'Asset Deal',
+        phase: 'NBO',
+        timeline: {
+          nboDeadline: '2024-02-01',
+          finalBidDeadline: '2024-03-01',
+          closingExpected: '2024-04-15'
+        },
+        access: {
+          watermarkEnabled: settings.watermarkEnabled,
+          downloadRestrictions: settings.downloadRestricted,
+          auditLogging: settings.auditLogging
+        },
+        notifications: {
+          emailAlerts: settings.emailNotifications,
+          qaNotifications: true,
+          bidNotifications: true
+        }
+      });
+
+      toast.dismiss(toastId);
+      showSuccessToast('Settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      showErrorToast('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -71,9 +111,9 @@ export default function Settings() {
             Manage data room configuration, security, and preferences
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={handleSaveSettings} disabled={saving}>
           <Save className="h-4 w-4" />
-          Save Changes
+          {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 

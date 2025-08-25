@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { documentsService } from '@/services/documentsService';
 import { Document } from '@/types/api';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { DocumentUploadModal } from '@/components/modals/DocumentUploadModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +38,7 @@ export default function Documents() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -170,6 +173,7 @@ export default function Documents() {
 
   const handleDownload = async (documentId: string) => {
     try {
+      const toastId = showLoadingToast('Preparing download...');
       const blob = await documentsService.downloadDocument(documentId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -177,13 +181,17 @@ export default function Documents() {
       a.download = selectedDocument?.name || 'document';
       a.click();
       window.URL.revokeObjectURL(url);
+      toast.dismiss(toastId);
+      showSuccessToast('Document downloaded successfully');
     } catch (error) {
       console.error('Failed to download document:', error);
+      showErrorToast('Failed to download document');
     }
   };
 
   const handleBulkDownload = async () => {
     try {
+      const toastId = showLoadingToast('Preparing bulk download...');
       const documentIds = documents.map(doc => doc.id);
       const blob = await documentsService.bulkDownload(documentIds);
       const url = window.URL.createObjectURL(blob);
@@ -192,9 +200,25 @@ export default function Documents() {
       a.download = 'documents.zip';
       a.click();
       window.URL.revokeObjectURL(url);
+      toast.dismiss(toastId);
+      showSuccessToast('Bulk download completed');
     } catch (error) {
       console.error('Failed to bulk download:', error);
+      showErrorToast('Failed to prepare bulk download');
     }
+  };
+
+  const handleUploadComplete = (document: Document) => {
+    // Refresh documents list
+    const fetchDocuments = async () => {
+      try {
+        const docs = await documentsService.getDocuments(folder);
+        setDocuments(docs);
+      } catch (error) {
+        console.error('Failed to refresh documents:', error);
+      }
+    };
+    fetchDocuments();
   };
 
   if (loading) {
@@ -242,7 +266,7 @@ export default function Documents() {
             <Download className="h-4 w-4" />
             Bulk Download
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setUploadModalOpen(true)}>
             <Upload className="h-4 w-4" />
             Upload Documents
           </Button>
@@ -354,6 +378,13 @@ export default function Documents() {
           )}
         </div>
       </div>
+
+      <DocumentUploadModal
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+        folderId={folder}
+        onUploadComplete={handleUploadComplete}
+      />
     </div>
   );
 }

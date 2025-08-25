@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { qaService } from '@/services/qaService';
 import { QAThread } from '@/types/api';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { NewQuestionModal } from '@/components/modals/NewQuestionModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,7 @@ export default function QA() {
   const [newQuestion, setNewQuestion] = useState('');
   const [newAnswer, setNewAnswer] = useState('');
   const [loading, setLoading] = useState(true);
+  const [newQuestionModalOpen, setNewQuestionModalOpen] = useState(false);
   const [filter, setFilter] = useState({
     status: 'all',
     category: 'all',
@@ -61,24 +64,39 @@ export default function QA() {
     if (!selectedThread || !newAnswer.trim()) return;
 
     try {
+      const toastId = showLoadingToast('Submitting answer...');
       const updatedThread = await qaService.answerThread(selectedThread.id, newAnswer, publishTo);
       setThreads(prev => prev.map(t => t.id === updatedThread.id ? updatedThread : t));
       setSelectedThread(updatedThread);
       setNewAnswer('');
+      toast.dismiss(toastId);
+      showSuccessToast(`Answer ${publishTo === 'draft' ? 'saved as draft' : 'published'} successfully`);
     } catch (error) {
       console.error('Failed to submit answer:', error);
+      showErrorToast('Failed to submit answer');
     }
   };
 
   const handleStatusUpdate = async (threadId: string, status: QAThread['status']) => {
     try {
+      const toastId = showLoadingToast('Updating status...');
       const updatedThread = await qaService.updateStatus(threadId, status);
       setThreads(prev => prev.map(t => t.id === updatedThread.id ? updatedThread : t));
       if (selectedThread?.id === threadId) {
         setSelectedThread(updatedThread);
       }
+      toast.dismiss(toastId);
+      showSuccessToast('Status updated successfully');
     } catch (error) {
       console.error('Failed to update status:', error);
+      showErrorToast('Failed to update status');
+    }
+  };
+
+  const handleQuestionCreated = (thread: QAThread) => {
+    setThreads(prev => [thread, ...prev]);
+    if (!selectedThread) {
+      setSelectedThread(thread);
     }
   };
 
@@ -139,7 +157,7 @@ export default function QA() {
             Manage questions and answers from bidders with controlled workflow
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setNewQuestionModalOpen(true)}>
           <Plus className="h-4 w-4" />
           New Question
         </Button>
@@ -345,6 +363,12 @@ export default function QA() {
           )}
         </div>
       </div>
+
+      <NewQuestionModal
+        open={newQuestionModalOpen}
+        onOpenChange={setNewQuestionModalOpen}
+        onQuestionCreated={handleQuestionCreated}
+      />
     </div>
   );
 }

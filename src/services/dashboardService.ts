@@ -1,38 +1,82 @@
 import { apiClient } from './api';
 import { ApiResponse, DashboardStats, RecentActivity, DealMetrics } from '../types/api';
+import { mockDashboardStats, mockRecentActivity, mockDealMetrics } from './mockData';
 
 export const dashboardService = {
   // GET /dashboard/stats
   async getStats(): Promise<DashboardStats> {
-    const response = await apiClient.get<ApiResponse<DashboardStats>>('/dashboard/stats');
-    return response.data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return mockDashboardStats;
   },
 
   // GET /dashboard/recent-activity
   async getRecentActivity(): Promise<RecentActivity[]> {
-    const response = await apiClient.get<ApiResponse<RecentActivity[]>>('/dashboard/recent-activity');
-    return response.data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return mockRecentActivity;
   },
 
   // GET /dashboard/deal-metrics
   async getDealMetrics(): Promise<DealMetrics> {
-    const response = await apiClient.get<ApiResponse<DealMetrics>>('/dashboard/deal-metrics');
-    return response.data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return mockDealMetrics;
   },
 
   // GET /dashboard/export/activity-report
   async exportActivityReport(): Promise<Blob> {
-    const response = await fetch(`${apiClient['baseURL']}/dashboard/export/activity-report`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-      },
-    });
-    return response.blob();
+    // Simulate report generation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const reportContent = `Activity Report - ${new Date().toLocaleDateString()}
+
+Dashboard Statistics:
+- Total Documents: ${mockDashboardStats.totalDocuments}
+- Active Users: ${mockDashboardStats.activeUsers}
+- Q&A Threads: ${mockDashboardStats.qaThreads}
+- Submitted Bids: ${mockDashboardStats.submittedBids}
+
+Recent Activity:
+${mockRecentActivity.map(activity => 
+  `- ${activity.title} by ${activity.user} at ${new Date(activity.time).toLocaleString()}`
+).join('\n')}
+
+Generated on: ${new Date().toLocaleString()}`;
+
+    return new Blob([reportContent], { type: 'text/plain' });
   },
 
   // GET /dashboard/access-logs
   async getAccessLogs(): Promise<any[]> {
-    const response = await apiClient.get<ApiResponse<any[]>>('/dashboard/access-logs');
-    return response.data;
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    return [
+      {
+        id: '1',
+        user: 'Michael Chen',
+        action: 'Document Download',
+        resource: 'Financial Statements Q3 2024.pdf',
+        timestamp: '2024-01-17T16:30:00Z',
+        ipAddress: '192.168.1.100'
+      },
+      {
+        id: '2',
+        user: 'Emma Wilson',
+        action: 'Q&A Submission',
+        resource: 'Working capital requirements',
+        timestamp: '2024-01-17T11:00:00Z',
+        ipAddress: '192.168.1.101'
+      },
+      {
+        id: '3',
+        user: 'Sarah Johnson',
+        action: 'Document Upload',
+        resource: 'Management Accounts.xlsx',
+        timestamp: '2024-01-15T16:00:00Z',
+        ipAddress: '192.168.1.102'
+      }
+    ];
   },
 };

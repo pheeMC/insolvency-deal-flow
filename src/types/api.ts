@@ -23,30 +23,24 @@ export interface DashboardStats {
   activeUsers: number;
   qaThreads: number;
   submittedBids: number;
-  changeMetrics: {
-    documents: string;
-    users: string;
-    qa: string;
-    bids: string;
-  };
 }
 
 export interface RecentActivity {
   id: string;
-  type: 'document' | 'qa' | 'bid' | 'access';
+  type: 'upload' | 'download' | 'question' | 'bid' | 'other';
   title: string;
   user: string;
   time: string;
-  icon: string;
 }
 
 export interface DealMetrics {
-  enterpriseValue: string;
-  dealType: string;
-  timeline: string;
-  bidders: string;
-  phase: string;
-  daysRemaining: number;
+  totalBidValue: number;
+  averageBidValue: number;
+  bidsReceived: number;
+  pendingQA: number;
+  qaResolutionRate: number;
+  documentViews: number;
+  activeUsers: number;
 }
 
 // Document Types
@@ -78,13 +72,13 @@ export interface QAThread {
   title: string;
   question: string;
   answer?: string;
-  status: 'new' | 'in-review' | 'answered' | 'published';
-  priority: 'low' | 'medium' | 'high';
+  status: string;
+  priority: string;
   askedBy: string;
   askedAt: string;
   answeredBy?: string;
   answeredAt?: string;
-  visibility: 'all-bidders' | 'specific-bidder' | 'internal';
+  visibility: string;
   attachments?: string[];
 }
 
@@ -119,11 +113,11 @@ export interface UserFilter {
 export interface Bid {
   id: string;
   bidderName: string;
-  bidderType: 'strategic' | 'financial';
+  bidderType: string;
   amount: number;
   currency: string;
-  phase: 'IOI' | 'NBO' | 'Final';
-  status: 'draft' | 'submitted' | 'reviewed' | 'shortlisted' | 'rejected';
+  phase: string;
+  status: string;
   submittedAt: string;
   submittedBy: string;
   conditions?: string[];
@@ -147,11 +141,9 @@ export interface DealSettings {
   dealName: string;
   dealType: string;
   phase: string;
-  timeline: {
-    nboDeadline: string;
-    finalBidDeadline: string;
-    closingExpected: string;
-  };
+  nboDeadline: string;
+  finalBidDeadline: string;
+  closingExpected: string;
   access: {
     watermarkEnabled: boolean;
     downloadRestrictions: boolean;

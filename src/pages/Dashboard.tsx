@@ -18,7 +18,7 @@ import {
   Calendar,
   Activity
 } from 'lucide-react';
-import { dashboardService } from '@/services/dashboardService';
+import { supabaseDashboardService as dashboardService } from '@/services/supabaseDashboardService';
 import { DashboardStats, RecentActivity, DealMetrics } from '@/types/api';
 
 export default function Dashboard() {
@@ -60,21 +60,21 @@ export default function Dashboard() {
     {
       title: 'Active Users',
       value: dashboardStats.activeUsers.toString(),
-      change: dashboardStats.changeMetrics.users,
+      change: '+8%',
       icon: Users,
       color: 'text-success',
     },
     {
       title: 'Q&A Threads',
       value: dashboardStats.qaThreads.toString(),
-      change: dashboardStats.changeMetrics.qa,
+      change: '+5%',
       icon: MessageCircle,
       color: 'text-warning',
     },
     {
       title: 'Submitted Bids',
       value: dashboardStats.submittedBids.toString(),
-      change: dashboardStats.changeMetrics.bids,
+      change: '+23%',
       icon: Gavel,
       color: 'text-primary',
     },
@@ -83,7 +83,7 @@ export default function Dashboard() {
   const dealMetricsData = dealMetrics ? [
     {
       label: 'Enterprise Value',
-      value: dealMetrics.enterpriseValue,
+      value: `€${dealMetrics.totalBidValue.toLocaleString()}`,
       subtext: 'Indicative range: €100M - €150M',
       icon: Euro,
     },

@@ -24,35 +24,43 @@ export const supabaseSettingsService = {
   async updateSettings(settings: Partial<DealSettings>): Promise<DealSettings> {
     const updateData = mapApiToDatabase(settings);
     
-    // First try to update existing settings
-    const { data, error } = await supabase
+    // First check if settings exist
+    const { data: existingSettings } = await supabase
       .from('deal_settings')
-      .update(updateData)
-      .select()
+      .select('id')
+      .limit(1)
       .single();
     
-    if (error) {
-      // If no settings exist, create new ones
-      if (error.code === 'PGRST116') {
-        const { data: newData, error: insertError } = await supabase
-          .from('deal_settings')
-          .insert({ ...mapApiToDatabase(getDefaultSettings()), ...updateData })
-          .select()
-          .single();
-        
-        if (insertError) {
-          showErrorToast(`Failed to create settings: ${insertError.message}`);
-          throw insertError;
-        }
-        
-        return mapDatabaseToApi(newData);
+    if (existingSettings) {
+      // Update existing settings
+      const { data, error } = await supabase
+        .from('deal_settings')
+        .update(updateData)
+        .eq('id', existingSettings.id)
+        .select()
+        .single();
+      
+      if (error) {
+        showErrorToast(`Failed to update settings: ${error.message}`);
+        throw error;
       }
       
-      showErrorToast(`Failed to update settings: ${error.message}`);
-      throw error;
+      return mapDatabaseToApi(data);
+    } else {
+      // Create new settings
+      const { data, error } = await supabase
+        .from('deal_settings')
+        .insert({ ...mapApiToDatabase(getDefaultSettings()), ...updateData })
+        .select()
+        .single();
+      
+      if (error) {
+        showErrorToast(`Failed to create settings: ${error.message}`);
+        throw error;
+      }
+      
+      return mapDatabaseToApi(data);
     }
-    
-    return mapDatabaseToApi(data);
   },
 
   async updateDealSettings(dealSettings: Partial<DealSettings>): Promise<DealSettings> {
@@ -77,9 +85,22 @@ export const supabaseSettingsService = {
       updateData.bid_notifications = notificationSettings.bidNotifications;
     }
     
+    // Get the first settings record
+    const { data: existingSettings } = await supabase
+      .from('deal_settings')
+      .select('id')
+      .limit(1)
+      .single();
+    
+    if (!existingSettings) {
+      showErrorToast('No settings found to update');
+      throw new Error('No settings found');
+    }
+    
     const { data, error } = await supabase
       .from('deal_settings')
       .update(updateData)
+      .eq('id', existingSettings.id)
       .select()
       .single();
     
@@ -128,14 +149,29 @@ export const supabaseSettingsService = {
     // Simulate restoration process
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Log the restoration action
-    await supabase
-      .from('activity_logs')
-      .insert({
-        action: 'Backup Restored',
-        resource_type: 'system',
-        details: { fileName: file.name, size: file.size }
-      });
+    try {
+      // Get current user profile ID for activity log
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (userProfile) {
+        // Log the restoration action using profile ID
+        await supabase
+          .from('activity_logs')
+          .insert({
+            user_id: userProfile.id,
+            action: 'Backup Restored',
+            resource_type: 'system',
+            details: { fileName: file.name, size: file.size }
+          });
+      }
+    } catch (error) {
+      console.error('Failed to log backup restoration:', error);
+      // Don't throw error to prevent blocking the restore functionality
+    }
   },
 
 };

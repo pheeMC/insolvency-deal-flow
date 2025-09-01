@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ import {
 
 export default function Settings() {
   const [settings, setSettings] = useState({
-    dealName: 'Test GmbH - Asset Deal',
+    dealName: '',
     dealDescription: 'Insolvency proceeding data room',
     adminEmail: 'admin@test-company.de',
     companyLogo: '',
@@ -59,6 +59,31 @@ export default function Settings() {
   });
 
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await settingsService.getSettings();
+        setSettings(prev => ({
+          ...prev,
+          dealName: data.dealName || 'Test GmbH - Asset Deal',
+          watermarkEnabled: data.access?.watermarkEnabled ?? true,
+          downloadRestricted: data.access?.downloadRestrictions ?? true,
+          auditLogging: data.access?.auditLogging ?? true,
+          emailNotifications: data.notifications?.emailAlerts ?? true,
+        }));
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        showErrorToast('Failed to load settings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
@@ -104,18 +129,27 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage data room configuration, security, and preferences
-          </p>
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading settings...</p>
+          </div>
         </div>
-        <Button className="gap-2" onClick={handleSaveSettings} disabled={saving}>
-          <Save className="h-4 w-4" />
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
-      </div>
+      ) : (
+        <>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage data room configuration, security, and preferences
+              </p>
+            </div>
+            <Button className="gap-2" onClick={handleSaveSettings} disabled={saving}>
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
 
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
@@ -529,6 +563,8 @@ export default function Settings() {
           </div>
         </TabsContent>
       </Tabs>
+        </>
+      )}
     </div>
   );
 }

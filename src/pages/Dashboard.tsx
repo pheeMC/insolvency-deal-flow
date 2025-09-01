@@ -36,6 +36,9 @@ export default function Dashboard() {
           dashboardService.getDealMetrics(),
         ]);
         
+        console.log('Dashboard stats received:', stats);
+        console.log('Stats changeMetrics:', stats?.changeMetrics);
+        
         setDashboardStats(stats);
         setRecentActivity(activity);
         setDealMetrics(metrics);
@@ -49,32 +52,32 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  const stats = dashboardStats ? [
+  const stats = dashboardStats && dashboardStats.changeMetrics ? [
     {
       title: 'Total Documents',
       value: dashboardStats.totalDocuments.toString(),
-      change: dashboardStats.changeMetrics?.documents || '+0%',
+      change: dashboardStats.changeMetrics.documents || '+0%',
       icon: FileText,
       color: 'text-primary',
     },
     {
       title: 'Active Users',
       value: dashboardStats.activeUsers.toString(),
-      change: '+8%',
+      change: dashboardStats.changeMetrics.users || '+8%',
       icon: Users,
       color: 'text-success',
     },
     {
       title: 'Q&A Threads',
       value: dashboardStats.qaThreads.toString(),
-      change: '+5%',
+      change: dashboardStats.changeMetrics.qa || '+5%',
       icon: MessageCircle,
       color: 'text-warning',
     },
     {
       title: 'Submitted Bids',
       value: dashboardStats.submittedBids.toString(),
-      change: '+23%',
+      change: dashboardStats.changeMetrics.bids || '+23%',
       icon: Gavel,
       color: 'text-primary',
     },

@@ -48,7 +48,15 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_activity_logs_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bids: {
         Row: {
@@ -110,6 +118,7 @@ export type Database = {
           nbo_deadline: string | null
           phase: string | null
           qa_notifications: boolean | null
+          timeline: string | null
           updated_at: string | null
           watermark_enabled: boolean | null
         }
@@ -127,6 +136,7 @@ export type Database = {
           nbo_deadline?: string | null
           phase?: string | null
           qa_notifications?: boolean | null
+          timeline?: string | null
           updated_at?: string | null
           watermark_enabled?: boolean | null
         }
@@ -144,6 +154,7 @@ export type Database = {
           nbo_deadline?: string | null
           phase?: string | null
           qa_notifications?: boolean | null
+          timeline?: string | null
           updated_at?: string | null
           watermark_enabled?: boolean | null
         }
@@ -189,15 +200,7 @@ export type Database = {
           uploaded_by?: string | null
           watermark?: boolean | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "documents_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {

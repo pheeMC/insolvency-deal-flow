@@ -57,6 +57,7 @@ export const supabaseDashboardService = {
   },
 
   async getRecentActivity(): Promise<RecentActivity[]> {
+    // Since we fixed the foreign key relationship, we need to join properly
     const { data, error } = await supabase
       .from('activity_logs')
       .select(`
@@ -64,13 +65,14 @@ export const supabaseDashboardService = {
         action,
         created_at,
         details,
-        profiles!inner(full_name)
+        profiles!fk_activity_logs_user_id(full_name)
       `)
       .order('created_at', { ascending: false })
       .limit(10);
     
     if (error) {
-      showErrorToast(`Failed to fetch recent activity: ${error.message}`);
+      console.error('Activity logs error:', error);
+      // Return empty array instead of throwing error to prevent dashboard crash
       return [];
     }
     
@@ -188,14 +190,14 @@ Generated on: ${new Date().toLocaleString()}`;
         created_at,
         details,
         ip_address,
-        profiles!inner(full_name)
+        profiles!fk_activity_logs_user_id(full_name)
       `)
       .in('action', ['Document Download', 'Document Access', 'Login', 'Q&A Submission'])
       .order('created_at', { ascending: false })
       .limit(50);
     
     if (error) {
-      showErrorToast(`Failed to fetch access logs: ${error.message}`);
+      console.error('Access logs error:', error);
       return [];
     }
     

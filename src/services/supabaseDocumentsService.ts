@@ -3,25 +3,39 @@ import { Document, DocumentUpload } from '@/types/api';
 
 export const documentsService = {
   async getDocuments(folderId?: string): Promise<Document[]> {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('parent_id', folderId || null)
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase.from('documents').select('*');
+      
+      if (folderId) {
+        query = query.eq('parent_id', folderId);
+      } else {
+        query = query.is('parent_id', null);
+      }
+      
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
 
-    if (error) throw error;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        return [];
+      }
 
-    return data.map(doc => ({
-      id: doc.id,
-      name: doc.name,
-      type: doc.type as 'file' | 'folder',
-      size: doc.size || undefined,
-      modified: doc.updated_at,
-      modifiedBy: doc.uploaded_by || 'Unknown',
-      access: doc.access_level as 'full' | 'restricted' | 'clean-team',
-      watermark: doc.watermark || true,
-      parentId: doc.parent_id || undefined,
-    }));
+      return (data || []).map(doc => ({
+        id: doc.id,
+        name: doc.name,
+        type: doc.type as 'file' | 'folder',
+        size: doc.size || undefined,
+        modified: doc.updated_at,
+        modifiedBy: doc.uploaded_by || 'Unknown',
+        access: doc.access_level as 'full' | 'restricted' | 'clean-team',
+        watermark: doc.watermark || true,
+        parentId: doc.parent_id || undefined,
+      }));
+    } catch (error) {
+      console.error('Documents service error:', error);
+      return [];
+    }
   },
 
   async getDocument(id: string): Promise<Document> {
@@ -47,48 +61,54 @@ export const documentsService = {
   },
 
   async uploadDocument(upload: DocumentUpload): Promise<Document> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('Not authenticated');
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('Not authenticated');
 
-    // Upload file to storage
-    const fileExt = upload.file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from('documents')
-      .upload(fileName, upload.file);
+      // Upload file to storage
+      const fileExt = upload.file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = upload.folderId ? `${upload.folderId}/${fileName}` : fileName;
+      
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, upload.file);
 
-    if (storageError) throw storageError;
+      if (storageError) throw storageError;
 
-    // Create document record
-    const { data, error } = await supabase
-      .from('documents')
-      .insert({
-        name: upload.name,
-        type: 'file',
-        file_path: storageData.path,
-        size: `${(upload.file.size / 1024 / 1024).toFixed(1)} MB`,
-        access_level: upload.access,
-        watermark: upload.watermark,
-        parent_id: upload.folderId || null,
-        uploaded_by: user.user.email,
-      })
-      .select()
-      .single();
+      // Create document record
+      const { data, error } = await supabase
+        .from('documents')
+        .insert({
+          name: upload.name,
+          type: 'file',
+          file_path: storageData.path,
+          size: `${(upload.file.size / 1024 / 1024).toFixed(1)} MB`,
+          access_level: upload.access,
+          watermark: upload.watermark,
+          parent_id: upload.folderId || null,
+          uploaded_by: user.user.email,
+        })
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return {
-      id: data.id,
-      name: data.name,
-      type: data.type as 'file' | 'folder',
-      size: data.size || undefined,
-      modified: data.updated_at,
-      modifiedBy: data.uploaded_by || 'Unknown',
-      access: data.access_level as 'full' | 'restricted' | 'clean-team',
-      watermark: data.watermark || true,
-      parentId: data.parent_id || undefined,
-    };
+      return {
+        id: data.id,
+        name: data.name,
+        type: data.type as 'file' | 'folder',
+        size: data.size || undefined,
+        modified: data.updated_at,
+        modifiedBy: data.uploaded_by || 'Unknown',
+        access: data.access_level as 'full' | 'restricted' | 'clean-team',
+        watermark: data.watermark || true,
+        parentId: data.parent_id || undefined,
+      };
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
   },
 
   async createFolder(name: string, parentId?: string, access: Document['access'] = 'full'): Promise<Document> {

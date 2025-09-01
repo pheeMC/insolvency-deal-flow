@@ -27,8 +27,8 @@ export const supabaseTimelineService = {
       description: event.description,
       date: event.event_date,
       time: event.event_time,
-      type: event.type,
-      status: event.status,
+      type: event.type as TimelineEvent['type'],
+      status: event.status as TimelineEvent['status'],
       participants: event.participants || []
     }));
   },
@@ -51,8 +51,8 @@ export const supabaseTimelineService = {
       description: data.description,
       date: data.event_date,
       time: data.event_time,
-      type: data.type,
-      status: data.status,
+      type: data.type as TimelineEvent['type'],
+      status: data.status as TimelineEvent['status'],
       participants: data.participants || []
     };
   },
@@ -83,8 +83,8 @@ export const supabaseTimelineService = {
       description: data.description,
       date: data.event_date,
       time: data.event_time,
-      type: data.type,
-      status: data.status,
+      type: data.type as TimelineEvent['type'],
+      status: data.status as TimelineEvent['status'],
       participants: data.participants || []
     };
   },
@@ -118,8 +118,8 @@ export const supabaseTimelineService = {
       description: data.description,
       date: data.event_date,
       time: data.event_time,
-      type: data.type,
-      status: data.status,
+      type: data.type as TimelineEvent['type'],
+      status: data.status as TimelineEvent['status'],
       participants: data.participants || []
     };
   },
@@ -154,8 +154,8 @@ export const supabaseTimelineService = {
       description: event.description,
       date: event.event_date,
       time: event.event_time,
-      type: event.type,
-      status: event.status,
+      type: event.type as TimelineEvent['type'],
+      status: event.status as TimelineEvent['status'],
       participants: event.participants || []
     }));
   },

@@ -146,6 +146,7 @@ function getDefaultSettings(): DealSettings {
     dealName: 'Default Deal',
     dealType: 'M&A',
     phase: 'Due Diligence',
+    timeline: '6 weeks',
     nboDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     finalBidDeadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     closingExpected: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -167,6 +168,7 @@ function mapDatabaseToApi(data: any): DealSettings {
     dealName: data.deal_name,
     dealType: data.deal_type,
     phase: data.phase,
+    timeline: data.timeline || '6 weeks',
     nboDeadline: data.nbo_deadline,
     finalBidDeadline: data.final_bid_deadline,
     closingExpected: data.closing_expected,
@@ -189,6 +191,7 @@ function mapApiToDatabase(settings: Partial<DealSettings>): any {
   if (settings.dealName) data.deal_name = settings.dealName;
   if (settings.dealType) data.deal_type = settings.dealType;
   if (settings.phase) data.phase = settings.phase;
+  if (settings.timeline) data.timeline = settings.timeline;
   if (settings.nboDeadline) data.nbo_deadline = settings.nboDeadline;
   if (settings.finalBidDeadline) data.final_bid_deadline = settings.finalBidDeadline;
   if (settings.closingExpected) data.closing_expected = settings.closingExpected;

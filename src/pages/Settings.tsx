@@ -76,11 +76,10 @@ export default function Settings() {
         dealName: settings.dealName,
         dealType: 'Asset Deal',
         phase: 'NBO',
-        timeline: {
-          nboDeadline: '2024-02-01',
-          finalBidDeadline: '2024-03-01',
-          closingExpected: '2024-04-15'
-        },
+        timeline: '6 weeks',
+        nboDeadline: '2024-02-01',
+        finalBidDeadline: '2024-03-01',
+        closingExpected: '2024-04-15',
         access: {
           watermarkEnabled: settings.watermarkEnabled,
           downloadRestrictions: settings.downloadRestricted,

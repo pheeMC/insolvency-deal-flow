@@ -53,7 +53,7 @@ export default function Dashboard() {
     {
       title: 'Total Documents',
       value: dashboardStats.totalDocuments.toString(),
-      change: dashboardStats.changeMetrics.documents,
+      change: dashboardStats.changeMetrics?.documents || '+0%',
       icon: FileText,
       color: 'text-primary',
     },

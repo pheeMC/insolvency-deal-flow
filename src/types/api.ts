@@ -23,11 +23,17 @@ export interface DashboardStats {
   activeUsers: number;
   qaThreads: number;
   submittedBids: number;
+  changeMetrics: {
+    documents: string;
+    users: string;
+    qa: string;
+    bids: string;
+  };
 }
 
 export interface RecentActivity {
   id: string;
-  type: 'upload' | 'download' | 'question' | 'bid' | 'other';
+  type: 'upload' | 'download' | 'question' | 'bid' | 'other' | 'document' | 'qa' | 'access';
   title: string;
   user: string;
   time: string;
@@ -41,6 +47,11 @@ export interface DealMetrics {
   qaResolutionRate: number;
   documentViews: number;
   activeUsers: number;
+  dealType: string;
+  timeline: string;
+  bidders: string;
+  phase: string;
+  daysRemaining: number;
 }
 
 // Document Types
@@ -141,6 +152,7 @@ export interface DealSettings {
   dealName: string;
   dealType: string;
   phase: string;
+  timeline: string;
   nboDeadline: string;
   finalBidDeadline: string;
   closingExpected: string;

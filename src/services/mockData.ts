@@ -21,37 +21,39 @@ export const mockRecentActivity: RecentActivity[] = [
     type: 'document',
     title: 'Financial Statements Q3 2024 uploaded',
     user: 'M&A Advisor',
-    time: '2024-01-17T10:30:00Z',
-    icon: 'FileText'
+    time: '2024-01-17T10:30:00Z'
   },
   {
     id: '2',
     type: 'qa',
     title: 'New question about employee contracts',
     user: 'Strategic Investor Alpha',
-    time: '2024-01-17T09:15:00Z',
-    icon: 'MessageCircle'
+    time: '2024-01-17T09:15:00Z'
   },
   {
     id: '3',
     type: 'bid',
     title: 'NBO submitted by Financial Investor Beta',
     user: 'Financial Investor Beta',
-    time: '2024-01-16T16:45:00Z',
-    icon: 'Gavel'
+    time: '2024-01-16T16:45:00Z'
   },
   {
     id: '4',
     type: 'access',
     title: 'Clean team member added',
     user: 'Deal Administrator',
-    time: '2024-01-16T14:20:00Z',
-    icon: 'Users'
+    time: '2024-01-16T14:20:00Z'
   }
 ];
 
 export const mockDealMetrics: DealMetrics = {
-  enterpriseValue: "€125M",
+  totalBidValue: 125000000,
+  averageBidValue: 15625000,
+  bidsReceived: 8,
+  pendingQA: 3,
+  qaResolutionRate: 85,
+  documentViews: 1247,
+  activeUsers: 24,
   dealType: "Asset Deal",
   timeline: "14 Days",
   bidders: "8 Active",
@@ -429,11 +431,10 @@ export const mockDealSettings: DealSettings = {
   dealName: 'Test GmbH - Asset Deal',
   dealType: 'Asset Deal',
   phase: 'NBO',
-  timeline: {
-    nboDeadline: '2024-02-01',
-    finalBidDeadline: '2024-03-01',
-    closingExpected: '2024-04-15'
-  },
+  timeline: '6 weeks',
+  nboDeadline: '2024-02-01',
+  finalBidDeadline: '2024-03-01',
+  closingExpected: '2024-04-15',
   access: {
     watermarkEnabled: true,
     downloadRestrictions: true,

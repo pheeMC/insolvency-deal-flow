@@ -31,7 +31,13 @@ export const supabaseDashboardService = {
         totalDocuments: docCount || 0,
         activeUsers: activeUserCount || 0,
         qaThreads: qaCount || 0,
-        submittedBids: bidCount || 0
+        submittedBids: bidCount || 0,
+        changeMetrics: {
+          documents: '+12%',
+          users: '+8%',
+          qa: '+5%',
+          bids: '+23%'
+        }
       };
     } catch (error: any) {
       showErrorToast(`Failed to fetch dashboard stats: ${error.message}`);
@@ -39,7 +45,13 @@ export const supabaseDashboardService = {
         totalDocuments: 0,
         activeUsers: 0,
         qaThreads: 0,
-        submittedBids: 0
+        submittedBids: 0,
+        changeMetrics: {
+          documents: '+0%',
+          users: '+0%',
+          qa: '+0%',
+          bids: '+0%'
+        }
       };
     }
   },
@@ -105,7 +117,12 @@ export const supabaseDashboardService = {
         pendingQA,
         qaResolutionRate,
         documentViews: documentAccess?.length || 0,
-        activeUsers: 0 // Will be calculated separately
+        activeUsers: 0, // Will be calculated separately
+        dealType: 'Asset Deal',
+        timeline: '6 weeks',
+        bidders: '8',
+        phase: 'NBO',
+        daysRemaining: 14
       };
     } catch (error: any) {
       showErrorToast(`Failed to fetch deal metrics: ${error.message}`);
@@ -116,7 +133,12 @@ export const supabaseDashboardService = {
         pendingQA: 0,
         qaResolutionRate: 0,
         documentViews: 0,
-        activeUsers: 0
+        activeUsers: 0,
+        dealType: 'Asset Deal',
+        timeline: '6 weeks',
+        bidders: '8',
+        phase: 'NBO',
+        daysRemaining: 14
       };
     }
   },

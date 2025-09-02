@@ -5,6 +5,7 @@ import { Document } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
 import { DocumentUploadModal } from '@/components/modals/DocumentUploadModal';
+import { FolderModal } from '@/components/modals/FolderModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,10 @@ import {
   ArrowLeft,
   Grid3X3,
   List,
-  Activity
+  Activity,
+  Edit,
+  Trash2,
+  FolderPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +44,8 @@ export default function Documents() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<Document | null>(null);
   
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -222,6 +228,36 @@ export default function Documents() {
     fetchDocuments();
   };
 
+  const handleFolderCreated = (newFolder: Document) => {
+    if (editingFolder) {
+      setDocuments(prev => prev.map(doc => doc.id === newFolder.id ? newFolder : doc));
+      setEditingFolder(null);
+    } else {
+      setDocuments(prev => [newFolder, ...prev]);
+    }
+  };
+
+  const handleEditFolder = (doc: Document) => {
+    setEditingFolder(doc);
+    setFolderModalOpen(true);
+  };
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      const toastId = showLoadingToast('Deleting...');
+      await documentsService.deleteDocument(documentId);
+      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      if (selectedDocument?.id === documentId) {
+        setSelectedDocument(null);
+      }
+      toast.dismiss(toastId);
+      showSuccessToast('Document deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      showErrorToast('Failed to delete document');
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -266,6 +302,10 @@ export default function Documents() {
           <Button variant="outline" className="gap-2" onClick={handleBulkDownload}>
             <Download className="h-4 w-4" />
             Bulk Download
+          </Button>
+          <Button variant="outline" className="gap-2" onClick={() => setFolderModalOpen(true)}>
+            <FolderPlus className="h-4 w-4" />
+            New Folder
           </Button>
           <Button className="gap-2" onClick={() => setUploadModalOpen(true)}>
             <Upload className="h-4 w-4" />
@@ -385,6 +425,19 @@ export default function Documents() {
         onOpenChange={setUploadModalOpen}
         folderId={folder}
         onUploadComplete={handleUploadComplete}
+      />
+
+      <FolderModal
+        open={folderModalOpen}
+        onOpenChange={(open) => {
+          setFolderModalOpen(open);
+          if (!open) {
+            setEditingFolder(null);
+          }
+        }}
+        onFolderCreated={handleFolderCreated}
+        parentId={folder}
+        folder={editingFolder}
       />
     </div>
   );

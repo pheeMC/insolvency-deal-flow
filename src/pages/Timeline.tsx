@@ -3,6 +3,7 @@ import { supabaseTimelineService as timelineService } from '@/services/supabaseT
 import { TimelineEvent as ApiTimelineEvent } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
+import { TimelineEventModal } from '@/components/modals/TimelineEventModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,8 @@ const timelineEvents: LocalTimelineEvent[] = [
 export default function Timeline() {
   const [events, setEvents] = useState<ApiTimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ApiTimelineEvent | null>(null);
 
   // Load timeline events from Supabase
   useEffect(() => {
@@ -146,8 +149,35 @@ export default function Timeline() {
     fetchEvents();
   }, []);
 
-  // Use mock data for display
-  const displayEvents = timelineEvents;
+  // Use API events if available, otherwise fall back to mock data
+  const displayEvents = events.length > 0 ? events : timelineEvents;
+
+  const handleEventCreated = (event: ApiTimelineEvent) => {
+    if (editingEvent) {
+      setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+      setEditingEvent(null);
+    } else {
+      setEvents(prev => [event, ...prev]);
+    }
+  };
+
+  const handleEditEvent = (event: ApiTimelineEvent) => {
+    setEditingEvent(event);
+    setEventModalOpen(true);
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const toastId = showLoadingToast('Deleting event...');
+      await timelineService.deleteEvent(eventId);
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+      toast.dismiss(toastId);
+      showSuccessToast('Event deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      showErrorToast('Failed to delete event');
+    }
+  };
 
   // Find current phase from mock data
   const currentPhase = timelineEvents.find(event => event.status === 'current');
@@ -221,9 +251,9 @@ export default function Timeline() {
             <Edit className="h-4 w-4" />
             Edit Timeline
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setEventModalOpen(true)}>
             <Plus className="h-4 w-4" />
-            Add Milestone
+            Add Event
           </Button>
         </div>
       </div>
@@ -270,12 +300,14 @@ export default function Timeline() {
 
       {/* Timeline Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {timelineEvents.slice(0, 4).map((event, index) => (
+        {displayEvents.slice(0, 4).map((event, index) => (
           <Card key={event.id} className={`${event.status === 'current' ? 'border-primary/50' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline" className="text-xs">{event.phase}</Badge>
-                {getStatusIcon(event.status)}
+                <Badge variant="outline" className="text-xs">Phase {index + 1}</Badge>
+                {event.status === 'completed' ? <CheckCircle className="h-4 w-4 text-success" /> : 
+                 event.status === 'current' ? <Clock className="h-4 w-4 text-primary" /> :
+                 <Calendar className="h-4 w-4 text-muted-foreground" />}
               </div>
               <h4 className="font-medium text-sm mb-1">{event.title}</h4>
               <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
@@ -298,14 +330,14 @@ export default function Timeline() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Detailed Timeline & Milestones
+            Timeline Events ({displayEvents.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
-          {timelineEvents.map((event, index) => (
+          {displayEvents.length > 0 ? displayEvents.map((event, index) => (
             <div key={event.id} className="relative">
               {/* Timeline Line */}
-              {index < timelineEvents.length - 1 && (
+              {index < displayEvents.length - 1 && (
                 <div className="absolute left-6 top-12 w-0.5 h-16 bg-border" />
               )}
               
@@ -386,9 +418,30 @@ export default function Timeline() {
                 </div>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">No timeline events yet</p>
+              <Button className="mt-4 gap-2" onClick={() => setEventModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add First Event
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <TimelineEventModal
+        open={eventModalOpen}
+        onOpenChange={(open) => {
+          setEventModalOpen(open);
+          if (!open) {
+            setEditingEvent(null);
+          }
+        }}
+        onEventCreated={handleEventCreated}
+        event={editingEvent}
+      />
     </div>
   );
 }

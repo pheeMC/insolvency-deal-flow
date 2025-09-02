@@ -3,6 +3,7 @@ import { supabaseBidsService as bidsService } from '@/services/supabaseBidsServi
 import { Bid as ApiBid } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
+import { BidModal } from '@/components/modals/BidModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -146,6 +147,8 @@ export default function Bids() {
   const [selectedBid, setSelectedBid] = useState<LocalBid | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [bidModalOpen, setBidModalOpen] = useState(false);
+  const [editingBid, setEditingBid] = useState<ApiBid | null>(null);
 
   // Load bids from Supabase
   useEffect(() => {
@@ -168,6 +171,33 @@ export default function Bids() {
 
     fetchBids();
   }, []);
+
+  const handleBidCreated = (bid: ApiBid) => {
+    if (editingBid) {
+      setBids(prev => prev.map(b => b.id === bid.id ? bid : b));
+      setEditingBid(null);
+    } else {
+      setBids(prev => [bid, ...prev]);
+    }
+  };
+
+  const handleEditBid = (bid: ApiBid) => {
+    setEditingBid(bid);
+    setBidModalOpen(true);
+  };
+
+  const handleDeleteBid = async (bidId: string) => {
+    try {
+      const toastId = showLoadingToast('Deleting bid...');
+      await bidsService.deleteBid(bidId);
+      setBids(prev => prev.filter(b => b.id !== bidId));
+      toast.dismiss(toastId);
+      showSuccessToast('Bid deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete bid:', error);
+      showErrorToast('Failed to delete bid');
+    }
+  };
 
   // Use API bids if available, otherwise fall back to mock data
   const displayBids = bids.length > 0 ? bids : [];
@@ -261,20 +291,20 @@ export default function Bids() {
           <Button
             variant="outline"
             onClick={() => setShowComparison(!showComparison)}
-            disabled={sealedBids.length === 0}
+            disabled={displayBids.length === 0 && mockBids.length === 0}
           >
             <Eye className="h-4 w-4 mr-2" />
             Compare Bids
           </Button>
-          <Button className="gap-2" disabled={sealedBids.length === 0}>
-            <Unlock className="h-4 w-4" />
-            Open Sealed Bids
+          <Button className="gap-2" onClick={() => setBidModalOpen(true)}>
+            <Gavel className="h-4 w-4" />
+            Add Bid
           </Button>
         </div>
       </div>
 
-      {/* Bid Opening Timer */}
-      {sealedBids.length > 0 && (
+      {/* Bid Opening Timer - Only show if there are sealed bids in mock data */}
+      {mockBids.filter(bid => bid.status === 'sealed').length > 0 && (
         <Card className="border-warning/20 bg-warning/5">
           <CardContent className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
@@ -284,7 +314,7 @@ export default function Bids() {
               <div>
                 <p className="font-medium">Sealed Bid Opening</p>
                 <p className="text-sm text-muted-foreground">
-                  {sealedBids.length} sealed bids will be opened in {daysToOpening} days
+                  {mockBids.filter(bid => bid.status === 'sealed').length} sealed bids will be opened in {Math.ceil((new Date('2024-01-30T12:00:00Z').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
                 </p>
               </div>
             </div>
@@ -303,12 +333,39 @@ export default function Bids() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Gavel className="h-5 w-5" />
-                Submitted Bids ({mockBids.length})
+                Submitted Bids ({bids.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="space-y-1">
-                {mockBids.map(bid => (
+                {bids.length > 0 ? bids.map(bid => (
+                  <div
+                    key={bid.id}
+                    className={`
+                      p-4 cursor-pointer hover:bg-accent/50 border-b border-border/50
+                      bg-primary/5 border-primary/50
+                    `}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        {bid.bidderType}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs gap-1">
+                        <FileText className="h-3 w-3" />
+                        {bid.status}
+                      </Badge>
+                    </div>
+                    <h3 className="font-medium text-sm mb-1">
+                      {bid.bidderName}
+                    </h3>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="font-medium">
+                        €{bid.amount.toLocaleString()}
+                      </span>
+                      <span>{new Date(bid.submittedAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                )) : mockBids.map(bid => (
                   <div
                     key={bid.id}
                     className={`
@@ -339,6 +396,12 @@ export default function Bids() {
                     </div>
                   </div>
                 ))}
+                {bids.length === 0 && mockBids.length === 0 && (
+                  <div className="text-center py-8">
+                    <Gavel className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground">No bids submitted yet</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -512,18 +575,30 @@ export default function Bids() {
                 </div>
               </CardContent>
             </Card>
-          ) : (
+            ) : (
             <Card>
               <CardContent className="flex items-center justify-center h-96">
                 <div className="text-center text-muted-foreground">
                   <Gavel className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Select a bid to view details</p>
+                  <p>No bids selected</p>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      <BidModal
+        open={bidModalOpen}
+        onOpenChange={(open) => {
+          setBidModalOpen(open);
+          if (!open) {
+            setEditingBid(null);
+          }
+        }}
+        onBidCreated={handleBidCreated}
+        bid={editingBid}
+      />
     </div>
   );
 }

@@ -19,29 +19,34 @@ import {
   Activity
 } from 'lucide-react';
 import { supabaseDashboardService as dashboardService } from '@/services/supabaseDashboardService';
-import { DashboardStats, RecentActivity, DealMetrics } from '@/types/api';
+import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
+import { DashboardStats, RecentActivity, DealMetrics, DealSettings } from '@/types/api';
 
 export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [dealMetrics, setDealMetrics] = useState<DealMetrics | null>(null);
+  const [dealSettings, setDealSettings] = useState<DealSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [stats, activity, metrics] = await Promise.all([
+        const [stats, activity, metrics, settings] = await Promise.all([
           dashboardService.getStats(),
           dashboardService.getRecentActivity(),
           dashboardService.getDealMetrics(),
+          settingsService.getSettings(),
         ]);
         
         console.log('Dashboard stats received:', stats);
         console.log('Stats changeMetrics:', stats?.changeMetrics);
+        console.log('Deal settings loaded:', settings);
         
         setDashboardStats(stats);
         setRecentActivity(activity);
         setDealMetrics(metrics);
+        setDealSettings(settings);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
@@ -151,15 +156,17 @@ export default function Dashboard() {
       {/* Deal Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Test GmbH - Asset Deal</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {dealSettings?.dealName || 'Loading...'} - {dealSettings?.dealType || 'Asset Deal'}
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Insolvency proceeding data room managed by Deal Administrator
+            {dealSettings?.phase || 'Insolvency proceeding'} data room managed by Deal Administrator
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="gap-2">
             <Clock className="h-3 w-3" />
-            Phase: {dealMetrics?.phase || 'NBO'}
+            Phase: {dealSettings?.phase || dealMetrics?.phase || 'NBO'}
           </Badge>
           <Badge variant="secondary">
             {dealMetrics?.daysRemaining || 14} days remaining

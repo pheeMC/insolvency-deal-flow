@@ -1,3 +1,8 @@
+import { useState, useEffect } from 'react';
+import { supabaseTimelineService as timelineService } from '@/services/supabaseTimelineService';
+import { TimelineEvent as ApiTimelineEvent } from '@/types/api';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +20,7 @@ import {
   Edit,
 } from 'lucide-react';
 
-interface TimelineEvent {
+interface LocalTimelineEvent {
   id: string;
   phase: string;
   title: string;
@@ -33,7 +38,7 @@ interface TimelineEvent {
   }[];
 }
 
-const timelineEvents: TimelineEvent[] = [
+const timelineEvents: LocalTimelineEvent[] = [
   {
     id: '1',
     phase: 'Phase 1',
@@ -122,7 +127,32 @@ const timelineEvents: TimelineEvent[] = [
 ];
 
 export default function Timeline() {
-  const getStatusIcon = (status: TimelineEvent['status']) => {
+  const [events, setEvents] = useState<ApiTimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load timeline events from Supabase
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await timelineService.getEvents();
+        setEvents(response);
+      } catch (error) {
+        console.error('Failed to fetch timeline events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Use mock data for display
+  const displayEvents = timelineEvents;
+
+  // Find current phase from mock data
+  const currentPhase = timelineEvents.find(event => event.status === 'current');
+
+  const getStatusIcon = (status: LocalTimelineEvent['status']) => {
     switch (status) {
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-success" />;
@@ -135,7 +165,7 @@ export default function Timeline() {
     }
   };
 
-  const getStatusBadgeVariant = (status: TimelineEvent['status']) => {
+  const getStatusBadgeVariant = (status: LocalTimelineEvent['status']) => {
     switch (status) {
       case 'completed':
         return 'default';
@@ -164,7 +194,18 @@ export default function Timeline() {
     return diffDays;
   };
 
-  const currentPhase = timelineEvents.find(event => event.status === 'current');
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading timeline...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

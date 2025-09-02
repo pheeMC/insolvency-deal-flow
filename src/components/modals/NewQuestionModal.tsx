@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { qaService } from '@/services/qaService';
+import { supabaseQAService as qaService } from '@/services/supabaseQAService';
 import { QAThread } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';

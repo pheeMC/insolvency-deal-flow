@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabaseBidsService as bidsService } from '@/services/supabaseBidsService';
+import { Bid as ApiBid } from '@/types/api';
+import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +22,7 @@ import {
   Calendar,
 } from 'lucide-react';
 
-interface Bid {
+interface LocalBid {
   id: string;
   bidderName: string;
   bidderType: 'strategic' | 'financial' | 'management';
@@ -52,7 +56,7 @@ interface Bid {
   };
 }
 
-const mockBids: Bid[] = [
+const mockBids: LocalBid[] = [
   {
     id: '1',
     bidderName: 'Strategic Investor Alpha',
@@ -138,10 +142,38 @@ const mockBids: Bid[] = [
 ];
 
 export default function Bids() {
-  const [selectedBid, setSelectedBid] = useState<Bid | null>(mockBids[0]);
+  const [bids, setBids] = useState<ApiBid[]>([]);
+  const [selectedBid, setSelectedBid] = useState<LocalBid | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const getBidderTypeBadgeVariant = (type: Bid['bidderType']) => {
+  // Load bids from Supabase
+  useEffect(() => {
+    const fetchBids = async () => {
+      try {
+        const response = await bidsService.getBids();
+        setBids(response);
+        // If no API bids, use mock data for now
+        if (response.length === 0) {
+          setSelectedBid(mockBids[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch bids:', error);
+        // Fallback to mock data
+        setSelectedBid(mockBids[0]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBids();
+  }, []);
+
+  // Use API bids if available, otherwise fall back to mock data
+  const displayBids = bids.length > 0 ? bids : [];
+  const hasMockData = bids.length === 0;
+
+  const getBidderTypeBadgeVariant = (type: LocalBid['bidderType']) => {
     switch (type) {
       case 'strategic':
         return 'default';
@@ -152,7 +184,7 @@ export default function Bids() {
     }
   };
 
-  const getStatusBadgeVariant = (status: Bid['status']) => {
+  const getStatusBadgeVariant = (status: LocalBid['status']) => {
     switch (status) {
       case 'draft':
         return 'outline';
@@ -167,7 +199,7 @@ export default function Bids() {
     }
   };
 
-  const getStatusIcon = (status: Bid['status']) => {
+  const getStatusIcon = (status: LocalBid['status']) => {
     switch (status) {
       case 'sealed':
         return <Lock className="h-3 w-3" />;
@@ -202,6 +234,19 @@ export default function Bids() {
   const sealedBids = mockBids.filter(bid => bid.status === 'sealed');
   const timeToOpening = new Date('2024-01-30T12:00:00Z').getTime() - new Date().getTime();
   const daysToOpening = Math.ceil(timeToOpening / (1000 * 60 * 60 * 24));
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Loading bids...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

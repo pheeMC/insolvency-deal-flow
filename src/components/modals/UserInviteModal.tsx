@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usersService } from '@/services/usersService';
+import { supabaseUsersService as usersService } from '@/services/supabaseUsersService';
 import { User } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';

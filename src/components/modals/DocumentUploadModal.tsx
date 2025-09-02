@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { documentsService } from '@/services/documentsService';
+import { documentsService } from '@/services/supabaseDocumentsService';
 import { Document } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';

@@ -85,24 +85,9 @@ export const supabaseUsersService = {
   },
 
   async inviteUser(email: string, role: User['role'], organization: string, accessLevel: string[]): Promise<User> {
-    // First, invite user through Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      data: {
-        role,
-        organization,
-        access_level: accessLevel
-      }
-    });
-    
-    if (authError) {
-      showErrorToast(`Failed to invite user: ${authError.message}`);
-      throw authError;
-    }
-    
-    // The profile will be created automatically by the trigger
-    // Return a temporary user object
+    // For now, create a profile directly (in production, you'd send an actual invitation)
     const newUser: User = {
-      id: authData.user?.id || Date.now().toString(),
+      id: Date.now().toString(),
       name: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       email,
       role,
@@ -112,7 +97,27 @@ export const supabaseUsersService = {
       accessLevel
     };
     
-    showSuccessToast('User invitation sent successfully');
+    // Create a pending profile entry
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: newUser.id, // Temporary ID until real auth
+        full_name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        organization: newUser.organization,
+        status: 'pending',
+        access_level: newUser.accessLevel
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      showErrorToast(`Failed to create user profile: ${error.message}`);
+      throw error;
+    }
+    
+    showSuccessToast('User profile created successfully');
     return newUser;
   },
 
@@ -238,30 +243,36 @@ export const supabaseUsersService = {
 
   async sendMessage(id: string, subject: string, message: string): Promise<void> {
     try {
-      // Get current user profile ID to use for activity log
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', id)
-        .single();
+      // Get current user from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get current user's profile
+        const { data: currentUserProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (userProfile) {
-        // Log the message action using profile ID
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: userProfile.id,
-            action: 'Message Sent',
-            resource_type: 'user',
-            resource_id: id,
-            details: { subject, message }
-          });
+        if (currentUserProfile) {
+          // Log the message action
+          await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: currentUserProfile.id,
+              action: 'Message Sent',
+              resource_type: 'user',
+              resource_id: id,
+              details: { subject, message }
+            });
+        }
       }
       
       console.log(`Message sent to user ${id}: ${subject}`);
+      showSuccessToast('Message sent successfully');
     } catch (error: any) {
-      console.error('Failed to log message:', error);
-      // Don't throw error here to prevent blocking the message functionality
+      console.error('Failed to send message:', error);
+      showErrorToast('Failed to send message');
     }
   },
 

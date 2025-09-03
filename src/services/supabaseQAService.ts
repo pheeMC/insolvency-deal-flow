@@ -239,19 +239,39 @@ export const supabaseQAService = {
   },
 
   async addInternalNote(id: string, note: string): Promise<void> {
-    // Log internal note activity
-    const { error } = await supabase
-      .from('activity_logs')
-      .insert({
-        action: 'Internal Note Added',
-        resource_type: 'qa_thread',
-        resource_id: id,
-        details: { note }
-      });
-    
-    if (error) {
-      showErrorToast(`Failed to add internal note: ${error.message}`);
-      throw error;
+    try {
+      // Get current user from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get current user's profile
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (userProfile) {
+          // Log internal note activity
+          const { error } = await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: userProfile.id,
+              action: 'Internal Note Added',
+              resource_type: 'qa_thread',
+              resource_id: id,
+              details: { note }
+            });
+          
+          if (error) {
+            showErrorToast(`Failed to add internal note: ${error.message}`);
+            throw error;
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to add internal note:', error);
+      showErrorToast('Failed to add internal note');
     }
   },
 

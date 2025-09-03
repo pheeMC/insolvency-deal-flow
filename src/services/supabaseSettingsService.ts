@@ -7,15 +7,16 @@ export const supabaseSettingsService = {
     const { data, error } = await supabase
       .from('deal_settings')
       .select('*')
-      .single();
+      .maybeSingle();
     
     if (error) {
-      // If no settings exist, return default settings
-      if (error.code === 'PGRST116') {
-        return getDefaultSettings();
-      }
       showErrorToast(`Failed to fetch settings: ${error.message}`);
       throw error;
+    }
+    
+    // If no settings exist, return default settings
+    if (!data) {
+      return getDefaultSettings();
     }
     
     return mapDatabaseToApi(data);
@@ -29,7 +30,7 @@ export const supabaseSettingsService = {
       .from('deal_settings')
       .select('id')
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (existingSettings) {
       // Update existing settings
@@ -90,7 +91,7 @@ export const supabaseSettingsService = {
       .from('deal_settings')
       .select('id')
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (!existingSettings) {
       showErrorToast('No settings found to update');
@@ -150,23 +151,28 @@ export const supabaseSettingsService = {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     try {
-      // Get current user profile ID for activity log
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      // Get current user from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get current user's profile
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (userProfile) {
-        // Log the restoration action using profile ID
-        await supabase
-          .from('activity_logs')
-          .insert({
-            user_id: userProfile.id,
-            action: 'Backup Restored',
-            resource_type: 'system',
-            details: { fileName: file.name, size: file.size }
-          });
+        if (userProfile) {
+          // Log the restoration action using profile ID
+          await supabase
+            .from('activity_logs')
+            .insert({
+              user_id: userProfile.id,
+              action: 'Backup Restored',
+              resource_type: 'system',
+              details: { fileName: file.name, size: file.size }
+            });
+        }
       }
     } catch (error) {
       console.error('Failed to log backup restoration:', error);

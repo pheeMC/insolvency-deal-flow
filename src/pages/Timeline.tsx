@@ -383,7 +383,7 @@ export default function Timeline() {
                   <div className="bg-accent/30 rounded-lg p-4">
                     <h4 className="font-medium mb-3 text-sm">Milestones</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {event.milestones.map((milestone, mIndex) => (
+                      {event.milestones && event.milestones.length > 0 ? event.milestones.map((milestone, mIndex) => (
                         <div key={mIndex} className="flex items-center gap-3">
                           {milestone.completed ? (
                             <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
@@ -399,7 +399,11 @@ export default function Timeline() {
                             </p>
                           </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="col-span-2">
+                          <p className="text-sm text-muted-foreground">No milestones defined</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Home,
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
 
 interface VDRSidebarProps {
   collapsed: boolean;
@@ -80,6 +81,28 @@ const navItems: NavItem[] = [
 export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<string[]>(['/documents']);
+  const [dealSettings, setDealSettings] = useState({
+    phase: 'NBO',
+    deadline: '14 days'
+  });
+
+  useEffect(() => {
+    const loadDealSettings = async () => {
+      try {
+        const settings = await settingsService.getSettings();
+        setDealSettings({
+          phase: settings.phase || 'NBO',
+          deadline: settings.nboDeadline ? 
+            `${Math.ceil((new Date(settings.nboDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days` : 
+            '14 days'
+        });
+      } catch (error) {
+        console.error('Failed to load deal settings:', error);
+      }
+    };
+
+    loadDealSettings();
+  }, []);
 
   const toggleExpanded = (href: string) => {
     setExpandedItems(prev =>
@@ -191,11 +214,11 @@ export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
             <div className="space-y-1">
               <div className="flex items-center justify-between px-3 py-2 text-sm">
                 <span>Phase</span>
-                <Badge variant="outline">NBO</Badge>
+                <Badge variant="outline">{dealSettings.phase}</Badge>
               </div>
               <div className="flex items-center justify-between px-3 py-2 text-sm">
                 <span>Deadline</span>
-                <span className="text-xs text-muted-foreground">14 days</span>
+                <span className="text-xs text-muted-foreground">{dealSettings.deadline}</span>
               </div>
             </div>
           </div>

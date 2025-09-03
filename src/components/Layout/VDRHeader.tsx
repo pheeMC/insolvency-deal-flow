@@ -11,6 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '@/lib/auth';
 
 interface VDRHeaderProps {
   onToggleSidebar: () => void;
@@ -18,6 +21,27 @@ interface VDRHeaderProps {
 }
 
 export const VDRHeader = ({ onToggleSidebar, sidebarCollapsed }: VDRHeaderProps) => {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Global search functionality
+      navigate(`/documents?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     <header className="vdr-header h-16 flex items-center justify-between px-6 sticky top-0 z-50">
       <div className="flex items-center gap-4">
@@ -40,17 +64,24 @@ export const VDRHeader = ({ onToggleSidebar, sidebarCollapsed }: VDRHeaderProps)
       </div>
 
       <div className="flex-1 max-w-md mx-6">
-        <div className="relative">
+        <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search documents, Q&A, bids..."
             className="pl-10 bg-background/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className="relative">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="relative"
+          onClick={() => navigate('/notifications')}
+        >
           <Bell className="h-5 w-5" />
           <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-destructive">
             3
@@ -76,16 +107,16 @@ export const VDRHeader = ({ onToggleSidebar, sidebarCollapsed }: VDRHeaderProps)
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </DropdownMenuItem>

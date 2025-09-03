@@ -4,6 +4,8 @@ import { User } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
 import { UserInviteModal } from '@/components/modals/UserInviteModal';
+import { EditUserModal } from '@/components/modals/EditUserModal';
+import { UserActivityModal } from '@/components/modals/UserActivityModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,9 @@ export default function Users() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState({
     role: 'all',
     status: 'all',
@@ -43,7 +48,8 @@ export default function Users() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await usersService.getUsers(filter);
+        const searchFilter = searchQuery.trim() ? { ...filter, search: searchQuery } : filter;
+        const response = await usersService.getUsers(searchFilter);
         setUsers(response.data);
         if (response.data.length > 0 && !selectedUser) {
           setSelectedUser(response.data[0]);
@@ -56,7 +62,7 @@ export default function Users() {
     };
 
     fetchUsers();
-  }, [filter]);
+  }, [filter, searchQuery]);
 
   const handleSuspendUser = async (userId: string) => {
     try {
@@ -89,6 +95,11 @@ export default function Users() {
 
   const handleInviteComplete = (user: User) => {
     setUsers(prev => [user, ...prev]);
+  };
+
+  const handleUserUpdated = (updatedUser: User) => {
+    setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    setSelectedUser(updatedUser);
   };
 
   const getRoleBadgeVariant = (role: User['role']) => {
@@ -184,6 +195,8 @@ export default function Users() {
           <Input
             placeholder="Search users..."
             className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Select value={filter.role} onValueChange={(value) => setFilter({...filter, role: value})}>
@@ -339,7 +352,7 @@ export default function Users() {
                 </div>
 
                 <div className="space-y-2 pt-4 border-t">
-                  <Button className="w-full gap-2" size="sm">
+                  <Button className="w-full gap-2" size="sm" onClick={() => setEditModalOpen(true)}>
                     <Edit className="h-3 w-3" />
                     Edit User
                   </Button>
@@ -347,7 +360,7 @@ export default function Users() {
                     <Mail className="h-3 w-3" />
                     Send Message
                   </Button>
-                  <Button variant="outline" className="w-full gap-2" size="sm">
+                  <Button variant="outline" className="w-full gap-2" size="sm" onClick={() => setActivityModalOpen(true)}>
                     <Eye className="h-3 w-3" />
                     View Activity
                   </Button>
@@ -377,6 +390,19 @@ export default function Users() {
         open={inviteModalOpen}
         onOpenChange={setInviteModalOpen}
         onInviteComplete={handleInviteComplete}
+      />
+
+      <EditUserModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        user={selectedUser}
+        onUserUpdated={handleUserUpdated}
+      />
+
+      <UserActivityModal
+        open={activityModalOpen}
+        onOpenChange={setActivityModalOpen}
+        user={selectedUser}
       />
     </div>
   );

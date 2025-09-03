@@ -92,6 +92,104 @@ export default function Settings() {
     }));
   };
 
+  const handleExportAllData = async () => {
+    try {
+      const toastId = showLoadingToast('Exporting data...');
+      const backup = await settingsService.createBackup();
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = backup.url;
+      link.download = `vdr-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.dismiss(toastId);
+      showSuccessToast('Data exported successfully');
+    } catch (error) {
+      console.error('Failed to export data:', error);
+      showErrorToast('Failed to export data');
+    }
+  };
+
+  const handleExportLogs = async () => {
+    try {
+      const toastId = showLoadingToast('Exporting logs...');
+      // Mock export functionality
+      const logs = await fetch('/api/audit-logs').catch(() => ({ json: () => [] }));
+      const data = await logs.json();
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      
+      toast.dismiss(toastId);
+      showSuccessToast('Logs exported successfully');
+    } catch (error) {
+      console.error('Failed to export logs:', error);
+      showErrorToast('Failed to export logs');
+    }
+  };
+
+  const handleLogoUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          handleSettingChange('companyLogo', result);
+          showSuccessToast('Logo uploaded successfully');
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleResetSettings = async () => {
+    if (window.confirm('Are you sure you want to reset all settings? This action cannot be undone.')) {
+      try {
+        const toastId = showLoadingToast('Resetting settings...');
+        // Reset to default values
+        const defaultSettings = {
+          dealName: 'Test GmbH - Asset Deal',
+          dealDescription: 'Insolvency proceeding data room',
+          adminEmail: 'admin@test-company.de',
+          companyLogo: '',
+          primaryColor: '#1e40af',
+          watermarkEnabled: true,
+          downloadRestricted: true,
+          sessionTimeout: '8',
+          twoFactorRequired: true,
+          emailNotifications: true,
+          slackIntegration: false,
+          auditLogging: true,
+          documentRetention: '7',
+          maxFileSize: '100',
+          allowedFileTypes: '.pdf,.docx,.xlsx,.pptx',
+        };
+        
+        setSettings(defaultSettings);
+        await handleSaveSettings();
+        
+        toast.dismiss(toastId);
+        showSuccessToast('Settings reset to defaults');
+      } catch (error) {
+        console.error('Failed to reset settings:', error);
+        showErrorToast('Failed to reset settings');
+      }
+    }
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -399,15 +497,15 @@ export default function Settings() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => alert('Email template editor - Coming soon!')}>
                   <FileText className="h-4 w-4" />
                   Invitation Email Template
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => alert('Email template editor - Coming soon!')}>
                   <FileText className="h-4 w-4" />
                   Q&A Notification Template
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => alert('Email template editor - Coming soon!')}>
                   <FileText className="h-4 w-4" />
                   Bid Deadline Reminder Template
                 </Button>
@@ -436,7 +534,7 @@ export default function Settings() {
                       placeholder="Upload logo..."
                       readOnly
                     />
-                    <Button variant="outline" className="gap-2">
+                    <Button variant="outline" className="gap-2" onClick={handleLogoUpload}>
                       <Upload className="h-4 w-4" />
                       Upload
                     </Button>
@@ -502,15 +600,15 @@ export default function Settings() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={handleExportAllData}>
                   <Download className="h-4 w-4" />
                   Export All Data
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={handleExportLogs}>
                   <Download className="h-4 w-4" />
                   Export Audit Logs
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={handleExportLogs}>
                   <Download className="h-4 w-4" />
                   Export User Activity Report
                 </Button>
@@ -533,7 +631,7 @@ export default function Settings() {
                       readOnly
                       type="password"
                     />
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => alert('API regeneration - Coming soon!')}>
                       Regenerate
                     </Button>
                   </div>
@@ -552,10 +650,14 @@ export default function Settings() {
                 <CardTitle className="text-destructive">Danger Zone</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full" onClick={handleResetSettings}>
                   Reset All Settings
                 </Button>
-                <Button variant="destructive" className="w-full">
+                <Button variant="destructive" className="w-full" onClick={() => {
+                  if (window.confirm('Are you sure you want to delete the entire data room? This action cannot be undone and will remove ALL data.')) {
+                    alert('Data room deletion - Contact administrator');
+                  }
+                }}>
                   Delete Data Room
                 </Button>
               </CardContent>

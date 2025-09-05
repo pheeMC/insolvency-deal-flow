@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { documentsService } from '@/services/supabaseDocumentsService';
 import { Document } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
 import { toast } from 'sonner';
 import { DocumentUploadModal } from '@/components/modals/DocumentUploadModal';
 import { FolderModal } from '@/components/modals/FolderModal';
+import { DocumentViewer } from '@/components/DocumentViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,8 @@ import { cn } from '@/lib/utils';
 
 export default function Documents() {
   const { folder } = useParams();
+  const [searchParams] = useSearchParams();
+  const currentFolderId = searchParams.get('folder');
   const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<string[]>(['00', '01']);
@@ -46,11 +49,12 @@ export default function Documents() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Document | null>(null);
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        const docs = await documentsService.getDocuments(folder);
+        const docs = await documentsService.getDocuments(currentFolderId);
         setDocuments(docs);
       } catch (error) {
         console.error('Failed to fetch documents:', error);
@@ -60,10 +64,10 @@ export default function Documents() {
     };
 
     fetchDocuments();
-  }, [folder]);
+  }, [currentFolderId]);
 
-  const isInFolder = !!folder;
-  const currentFolder = documents.find(f => f.id === folder);
+  const isInFolder = !!currentFolderId;
+  const currentFolder = documents.find(f => f.id === currentFolderId);
   
   const displayDocuments = isInFolder 
     ? currentFolder?.children || []
@@ -119,9 +123,10 @@ export default function Documents() {
           style={{ paddingLeft: `${paddingLeft + 0.75}rem` }}
           onClick={() => {
             if (isFolder) {
-              toggleFolder(doc.id);
+              handleFolderClick(doc.id);
             } else {
               setSelectedDocument(doc);
+              setShowDocumentViewer(true);
             }
           }}
         >
@@ -144,10 +149,27 @@ export default function Documents() {
             {doc.watermark && <Lock className="h-3 w-3 text-muted-foreground" />}
             {!isFolder && (
               <div className="flex gap-1">
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-6 w-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDocument(doc);
+                    setShowDocumentViewer(true);
+                  }}
+                >
                   <Eye className="h-3 w-3" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleDownload(doc.id)}>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-6 w-6 p-0" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(doc.id);
+                  }}
+                >
                   <Download className="h-3 w-3" />
                 </Button>
               </div>
@@ -163,7 +185,7 @@ export default function Documents() {
   };
 
   const handleFolderClick = (folderId: string) => {
-    navigate(`/documents/${folderId}`);
+    navigate(`/documents?folder=${folderId}`);
   };
 
   const handleBackClick = () => {
@@ -219,7 +241,7 @@ export default function Documents() {
     // Refresh documents list
     const fetchDocuments = async () => {
       try {
-        const docs = await documentsService.getDocuments(folder);
+        const docs = await documentsService.getDocuments(currentFolderId);
         setDocuments(docs);
       } catch (error) {
         console.error('Failed to refresh documents:', error);
@@ -423,7 +445,7 @@ export default function Documents() {
       <DocumentUploadModal
         open={uploadModalOpen}
         onOpenChange={setUploadModalOpen}
-        folderId={folder}
+        folderId={currentFolderId}
         onUploadComplete={handleUploadComplete}
       />
 
@@ -436,9 +458,21 @@ export default function Documents() {
           }
         }}
         onFolderCreated={handleFolderCreated}
-        parentId={folder}
+        parentId={currentFolderId}
         folder={editingFolder}
       />
+
+      {selectedDocument && showDocumentViewer && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+            <DocumentViewer
+              document={selectedDocument}
+              onClose={() => setShowDocumentViewer(false)}
+              onDownload={handleDownload}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

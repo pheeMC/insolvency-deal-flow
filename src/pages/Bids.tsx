@@ -252,7 +252,10 @@ export default function Bids() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'No date';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -360,9 +363,9 @@ export default function Bids() {
                     </h3>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="font-medium">
-                        €{bid.amount.toLocaleString()}
+                        €{bid.amount?.toLocaleString() || 'N/A'}
                       </span>
-                      <span>{new Date(bid.submittedAt).toLocaleDateString()}</span>
+                      <span>{bid.submittedAt ? new Date(bid.submittedAt).toLocaleDateString() : 'N/A'}</span>
                     </div>
                   </div>
                 )) : mockBids.map(bid => (

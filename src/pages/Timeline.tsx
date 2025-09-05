@@ -209,7 +209,10 @@ export default function Timeline() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'No date';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -217,8 +220,10 @@ export default function Timeline() {
   };
 
   const calculateDaysRemaining = (endDate: string) => {
+    if (!endDate) return 0;
     const today = new Date();
     const end = new Date(endDate);
+    if (isNaN(end.getTime())) return 0;
     const diffTime = end.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -272,26 +277,26 @@ export default function Timeline() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{currentPhase.title}</h3>
                 <p className="text-muted-foreground mb-4">{currentPhase.description}</p>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>Due: {formatDate(currentPhase.endDate)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{calculateDaysRemaining(currentPhase.endDate)} days remaining</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    <span>{currentPhase.assignee}</span>
-                  </div>
-                </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>Due: {formatDate(currentPhase.endDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{calculateDaysRemaining(currentPhase.endDate)} days remaining</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{currentPhase.assignee || 'TBD'}</span>
+                      </div>
+                    </div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-primary mb-1">
-                  {currentPhase.progress}%
+                  {currentPhase.progress || 0}%
                 </div>
-                <Progress value={currentPhase.progress} className="w-24 h-2" />
+                <Progress value={currentPhase.progress || 0} className="w-24 h-2" />
               </div>
             </div>
           </CardContent>
@@ -314,11 +319,11 @@ export default function Timeline() {
                 {event.description}
               </p>
               <div className="space-y-2">
-                <Progress value={event.progress} className="h-1" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatDate(event.startDate)}</span>
-                  <span>{event.progress}%</span>
-                </div>
+                  <Progress value={event.progress || 0} className="h-1" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{formatDate((event as any).event_date || event.startDate)}</span>
+                    <span>{event.progress || 0}%</span>
+                  </div>
               </div>
             </CardContent>
           </Card>
@@ -370,11 +375,11 @@ export default function Timeline() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-muted-foreground mb-1">
-                        {formatDate(event.startDate)} - {formatDate(event.endDate)}
+                        {formatDate((event as any).event_date || event.startDate)} - {formatDate(event.endDate)}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Progress value={event.progress} className="w-20 h-2" />
-                        <span className="text-sm font-medium">{event.progress}%</span>
+                        <Progress value={event.progress || 0} className="w-20 h-2" />
+                        <span className="text-sm font-medium">{event.progress || 0}%</span>
                       </div>
                     </div>
                   </div>
@@ -407,18 +412,18 @@ export default function Timeline() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3" />
-                      <span>Assignee: {event.assignee}</span>
-                    </div>
-                    {event.status === 'current' && (
+                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{calculateDaysRemaining(event.endDate)} days remaining</span>
+                        <Users className="h-3 w-3" />
+                        <span>Assignee: {event.assignee || 'TBD'}</span>
                       </div>
-                    )}
-                  </div>
+                      {event.status === 'current' && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{calculateDaysRemaining((event as any).event_date || event.endDate)} days remaining</span>
+                        </div>
+                      )}
+                    </div>
                 </div>
               </div>
             </div>

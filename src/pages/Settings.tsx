@@ -195,6 +195,16 @@ export default function Settings() {
     try {
       const toastId = showLoadingToast('Saving settings...');
       
+      // Apply branding changes to document root
+      if (settings.companyLogo) {
+        document.documentElement.style.setProperty('--company-logo', `url(${settings.companyLogo})`);
+      }
+      if (settings.primaryColor) {
+        // Convert hex to HSL for design system
+        const hsl = hexToHsl(settings.primaryColor);
+        document.documentElement.style.setProperty('--primary', hsl);
+      }
+      
       await settingsService.updateSettings({
         dealName: settings.dealName,
         dealType: 'Asset Deal',
@@ -223,6 +233,33 @@ export default function Settings() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Helper function to convert hex to HSL
+  const hexToHsl = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+        default: h = 0;
+      }
+      h /= 6;
+    }
+
+    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
   };
 
   return (
@@ -524,37 +561,74 @@ export default function Settings() {
                   Brand Customization
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyLogo">Company Logo</Label>
-                  <div className="flex gap-3">
-                    <Input
-                      id="companyLogo"
-                      value={settings.companyLogo}
-                      placeholder="Upload logo..."
-                      readOnly
-                    />
-                    <Button variant="outline" className="gap-2" onClick={handleLogoUpload}>
-                      <Upload className="h-4 w-4" />
-                      Upload
-                    </Button>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="companyLogo">Company Logo</Label>
+                      <div className="flex gap-3">
+                        <Input
+                          id="companyLogo"
+                          value={settings.companyLogo ? 'Logo uploaded' : ''}
+                          placeholder="Upload logo..."
+                          readOnly
+                        />
+                        <Button variant="outline" className="gap-2" onClick={handleLogoUpload}>
+                          <Upload className="h-4 w-4" />
+                          Upload
+                        </Button>
+                      </div>
+                      {settings.companyLogo && (
+                        <div className="mt-2">
+                          <img 
+                            src={settings.companyLogo} 
+                            alt="Company Logo Preview" 
+                            className="h-16 w-auto border rounded"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="primaryColor">Primary Color</Label>
+                      <div className="flex gap-3 items-center">
+                        <Input
+                          id="primaryColor"
+                          type="color"
+                          value={settings.primaryColor}
+                          onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          value={settings.primaryColor}
+                          onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
+                          placeholder="#1e40af"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="primaryColor">Primary Color</Label>
-                  <div className="flex gap-3 items-center">
-                    <Input
-                      id="primaryColor"
-                      type="color"
-                      value={settings.primaryColor}
-                      onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      value={settings.primaryColor}
-                      onChange={(e) => handleSettingChange('primaryColor', e.target.value)}
-                      placeholder="#1e40af"
-                    />
+                  
+                  <div className="space-y-2">
+                    <Label>Live Preview</Label>
+                    <Card className="p-4 border-2" style={{ borderColor: settings.primaryColor }}>
+                      <div className="space-y-3">
+                        {settings.companyLogo && (
+                          <img 
+                            src={settings.companyLogo} 
+                            alt="Logo" 
+                            className="h-8 w-auto"
+                          />
+                        )}
+                        <div 
+                          className="h-8 rounded flex items-center px-3 text-white text-sm font-medium"
+                          style={{ backgroundColor: settings.primaryColor }}
+                        >
+                          Primary Button
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          This is how your branding will appear throughout the portal
+                        </div>
+                      </div>
+                    </Card>
                   </div>
                 </div>
               </CardContent>

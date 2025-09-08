@@ -99,7 +99,7 @@ export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
         setDealSettings({
           phase: settings.phase || 'NBO',
           deadline: settings.nboDeadline ? 
-            `${Math.ceil((new Date(settings.nboDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days` : 
+            `${Math.max(1, Math.ceil((new Date(settings.nboDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days` : 
             '14 days'
         });
         

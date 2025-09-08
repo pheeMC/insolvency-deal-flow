@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { InitializationWizard } from '@/components/modals/InitializationWizard';
 import {
   Settings as SettingsIcon,
   Shield,
@@ -60,6 +61,7 @@ export default function Settings() {
 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showInitWizard, setShowInitWizard] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -197,8 +199,8 @@ export default function Settings() {
         toast.dismiss(toastId);
         showSuccessToast('All data reset successfully');
         
-        // Reload the page to refresh all cached data
-        setTimeout(() => window.location.reload(), 1000);
+        // Show initialization wizard
+        setShowInitWizard(true);
       } catch (error) {
         console.error('Failed to reset settings:', error);
         showErrorToast('Failed to reset settings');
@@ -757,6 +759,16 @@ export default function Settings() {
       </Tabs>
         </>
       )}
+
+      {/* Initialization Wizard */}
+      <InitializationWizard
+        isOpen={showInitWizard}
+        onClose={() => setShowInitWizard(false)}
+        onComplete={() => {
+          // Reload page after wizard completion
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

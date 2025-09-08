@@ -177,7 +177,10 @@ export default function Dashboard() {
             Phase: {dealSettings?.phase || dealMetrics?.phase || 'NBO'}
           </Badge>
           <Badge variant="secondary">
-            {dealMetrics?.daysRemaining || 14} days remaining
+            {dealSettings?.nboDeadline ? 
+              `${Math.max(1, Math.ceil((new Date(dealSettings.nboDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days remaining` :
+              `${dealMetrics?.daysRemaining || 14} days remaining`
+            }
           </Badge>
         </div>
       </div>

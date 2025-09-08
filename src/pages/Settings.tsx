@@ -156,9 +156,22 @@ export default function Settings() {
   };
 
   const handleResetSettings = async () => {
-    if (window.confirm('Are you sure you want to reset all settings? This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to reset all settings? This will clear all data including documents, bids, timeline events, and users. This action cannot be undone.')) {
       try {
-        const toastId = showLoadingToast('Resetting settings...');
+        const toastId = showLoadingToast('Resetting all data...');
+        
+        // Import supabase to clear all tables
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        // Clear all data tables
+        await Promise.all([
+          supabase.from('bids').delete().neq('id', ''),
+          supabase.from('timeline_events').delete().neq('id', ''),
+          supabase.from('qa_threads').delete().neq('id', ''),
+          supabase.from('documents').delete().neq('id', ''),
+          supabase.from('activity_logs').delete().neq('id', '')
+        ]);
+        
         // Reset to default values
         const defaultSettings = {
           dealName: 'Test GmbH - Asset Deal',
@@ -182,7 +195,10 @@ export default function Settings() {
         await handleSaveSettings();
         
         toast.dismiss(toastId);
-        showSuccessToast('Settings reset to defaults');
+        showSuccessToast('All data reset successfully');
+        
+        // Reload the page to refresh all cached data
+        setTimeout(() => window.location.reload(), 1000);
       } catch (error) {
         console.error('Failed to reset settings:', error);
         showErrorToast('Failed to reset settings');

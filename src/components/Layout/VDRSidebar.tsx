@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
+import { documentsService } from '@/services/supabaseDocumentsService';
 
 interface VDRSidebarProps {
   collapsed: boolean;
@@ -32,7 +33,8 @@ interface NavItem {
   children?: NavItem[];
 }
 
-const navItems: NavItem[] = [
+// Base navigation items - documents will be populated dynamically
+const getNavItems = (documentFolders: any[]): NavItem[] => [
   {
     title: 'Dashboard',
     href: '/',
@@ -42,12 +44,11 @@ const navItems: NavItem[] = [
     title: 'Documents',
     href: '/documents',
     icon: FolderOpen,
-    children: [
-      { title: '00_Admin', href: '/documents/admin', icon: Shield },
-      { title: '01_Corporate', href: '/documents/corporate', icon: FileText },
-      { title: '02_Financials', href: '/documents/financials', icon: BarChart3 },
-      { title: '90_InsO', href: '/documents/insolvency', icon: Gavel },
-    ],
+    children: documentFolders.map(folder => ({
+      title: folder.name,
+      href: `/documents?folder=${folder.id}`,
+      icon: FolderOpen,
+    })),
   },
   {
     title: 'Q&A Center',
@@ -85,17 +86,26 @@ export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
     phase: 'NBO',
     deadline: '14 days'
   });
+  const [documentFolders, setDocumentFolders] = useState<any[]>([]);
 
   useEffect(() => {
     const loadDealSettings = async () => {
       try {
-        const settings = await settingsService.getSettings();
+        const [settings, folders] = await Promise.all([
+          settingsService.getSettings(),
+          documentsService.getDocuments() // Get root documents/folders
+        ]);
+        
         setDealSettings({
           phase: settings.phase || 'NBO',
           deadline: settings.nboDeadline ? 
             `${Math.ceil((new Date(settings.nboDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days` : 
             '14 days'
         });
+        
+        // Filter only folders for sidebar
+        const folderList = folders.filter(doc => doc.type === 'folder');
+        setDocumentFolders(folderList);
       } catch (error) {
         console.error('Failed to load deal settings:', error);
       }
@@ -203,7 +213,7 @@ export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
     )}>
       <div className="flex flex-col h-full p-3">
         <div className="flex-1 space-y-2">
-          {navItems.map(item => renderNavItem(item))}
+          {getNavItems(documentFolders).map(item => renderNavItem(item))}
         </div>
         
         {!collapsed && (

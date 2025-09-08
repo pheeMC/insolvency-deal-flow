@@ -20,23 +20,29 @@ import {
 } from 'lucide-react';
 import { supabaseDashboardService as dashboardService } from '@/services/supabaseDashboardService';
 import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
-import { DashboardStats, RecentActivity, DealMetrics, DealSettings } from '@/types/api';
+import { supabaseTimelineService } from '@/services/supabaseTimelineService';
+import { supabaseQAService } from '@/services/supabaseQAService';
+import { DashboardStats, RecentActivity, DealMetrics, DealSettings, TimelineEvent } from '@/types/api';
 
 export default function Dashboard() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [dealMetrics, setDealMetrics] = useState<DealMetrics | null>(null);
   const [dealSettings, setDealSettings] = useState<DealSettings | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
+  const [pendingQAs, setPendingQAs] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [stats, activity, metrics, settings] = await Promise.all([
+        const [stats, activity, metrics, settings, timeline, qaThreads] = await Promise.all([
           dashboardService.getStats(),
           dashboardService.getRecentActivity(),
           dashboardService.getDealMetrics(),
           settingsService.getSettings(),
+          supabaseTimelineService.getEvents(),
+          supabaseQAService.getThreads(),
         ]);
         
         console.log('Dashboard stats received:', stats);
@@ -47,6 +53,8 @@ export default function Dashboard() {
         setRecentActivity(activity);
         setDealMetrics(metrics);
         setDealSettings(settings);
+        setTimelineEvents(timeline);
+        setPendingQAs(qaThreads.data.filter(qa => qa.status === 'new').length);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
@@ -226,37 +234,31 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">NDA Execution</span>
-                <Badge variant="default">Completed</Badge>
+            {timelineEvents.length > 0 ? (
+              timelineEvents.slice(0, 4).map((event) => {
+                const isCompleted = event.status === 'completed';
+                const isCurrent = event.status === 'ongoing';
+                const progress = isCompleted ? 100 : isCurrent ? 65 : 0;
+                
+                return (
+                  <div key={event.id} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{event.title}</span>
+                      <Badge variant={isCompleted ? "default" : isCurrent ? "secondary" : "outline"}>
+                        {isCompleted ? "Completed" : isCurrent ? "Current Phase" : "Upcoming"}
+                      </Badge>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="h-8 w-8 mx-auto mb-2" />
+                <p>No timeline events found</p>
+                <p className="text-xs mt-1">Add events in the Timeline section</p>
               </div>
-              <Progress value={100} className="h-2" />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Initial Offer (IOI)</span>
-                <Badge variant="default">Completed</Badge>
-              </div>
-              <Progress value={100} className="h-2" />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Non-Binding Offer (NBO)</span>
-                <Badge variant="secondary">Current Phase</Badge>
-              </div>
-              <Progress value={65} className="h-2" />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Binding Offer</span>
-                <Badge variant="outline">Upcoming</Badge>
-              </div>
-              <Progress value={0} className="h-2" />
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -301,24 +303,38 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-warning/5 border border-warning/20 rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Q&A Response Due</p>
-                <p className="text-xs text-muted-foreground">3 questions awaiting response</p>
+            {pendingQAs > 0 && (
+              <div className="flex items-center justify-between p-3 bg-warning/5 border border-warning/20 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">Q&A Response Due</p>
+                  <p className="text-xs text-muted-foreground">{pendingQAs} questions awaiting response</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => window.location.href = '/qa'}>
+                  Review
+                </Button>
               </div>
-              <Button size="sm" variant="outline">
-                Review
-              </Button>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Bid Deadline Approaching</p>
-                <p className="text-xs text-muted-foreground">NBO phase ends in 14 days</p>
+            )}
+            
+            {dealSettings?.nboDeadline && (
+              <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">Bid Deadline Approaching</p>
+                  <p className="text-xs text-muted-foreground">
+                    NBO deadline: {new Date(dealSettings.nboDeadline).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button size="sm" onClick={() => window.location.href = '/timeline'}>
+                  View Details
+                </Button>
               </div>
-              <Button size="sm">
-                View Details
-              </Button>
-            </div>
+            )}
+            
+            {pendingQAs === 0 && !dealSettings?.nboDeadline && (
+              <div className="text-center py-4 text-muted-foreground">
+                <AlertCircle className="h-6 w-6 mx-auto mb-2" />
+                <p className="text-sm">No action items at this time</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

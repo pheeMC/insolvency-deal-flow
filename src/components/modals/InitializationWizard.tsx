@@ -28,6 +28,7 @@ import { supabaseSettingsService } from '@/services/supabaseSettingsService';
 import { supabaseTimelineService } from '@/services/supabaseTimelineService';
 import { documentsService } from '@/services/supabaseDocumentsService';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 
 interface InitializationWizardProps {
@@ -54,6 +55,7 @@ interface WizardData {
 }
 
 export function InitializationWizard({ isOpen, onClose, onComplete }: InitializationWizardProps) {
+  const { triggerGlobalReset } = useDataRoom();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<WizardData>({
@@ -196,6 +198,10 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
 
       toast.dismiss(toastId);
       showSuccessToast('Data room initialized successfully!');
+      
+      // Trigger global reset to refresh all components with new data
+      triggerGlobalReset();
+      
       onComplete();
       onClose();
     } catch (error) {

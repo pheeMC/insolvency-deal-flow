@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { DataRoomProvider } from "./contexts/DataRoomContext";
 import { LoginForm } from "./components/auth/LoginForm";
 import { VDRLayout } from "./components/Layout/VDRLayout";
 import Dashboard from "./pages/Dashboard";
@@ -56,13 +57,15 @@ const AuthGuard = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthGuard />
-        </BrowserRouter>
-      </TooltipProvider>
+      <DataRoomProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthGuard />
+          </BrowserRouter>
+        </TooltipProvider>
+      </DataRoomProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

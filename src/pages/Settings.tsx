@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabaseSettingsService as settingsService } from '@/services/supabaseSettingsService';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ import {
 } from '@/components/ui/tabs';
 
 export default function Settings() {
+  const { triggerGlobalReset, setIsResetting } = useDataRoom();
   const [settings, setSettings] = useState({
     dealName: '',
     dealDescription: 'Insolvency proceeding data room',
@@ -158,27 +160,19 @@ export default function Settings() {
   };
 
   const handleResetSettings = async () => {
-    if (window.confirm('Are you sure you want to reset all settings? This will clear all data including documents, bids, timeline events, and users. This action cannot be undone.')) {
+    if (window.confirm('Are you sure you want to reset all data? This will completely clear all documents, bids, timeline events, Q&A, and activity logs. This action cannot be undone.')) {
+      setIsResetting(true);
       try {
-        const toastId = showLoadingToast('Resetting all data...');
+        const toastId = showLoadingToast('Resetting all data room data...');
         
-        // Import supabase to clear all tables
-        const { supabase } = await import('@/integrations/supabase/client');
+        // Use the enhanced reset function from settings service
+        await settingsService.resetAllData();
         
-        // Clear all data tables
-        await Promise.all([
-          supabase.from('bids').delete().neq('id', ''),
-          supabase.from('timeline_events').delete().neq('id', ''),
-          supabase.from('qa_threads').delete().neq('id', ''),
-          supabase.from('documents').delete().neq('id', ''),
-          supabase.from('activity_logs').delete().neq('id', '')
-        ]);
-        
-        // Reset to default values
+        // Reset local settings to defaults
         const defaultSettings = {
-          dealName: 'Test GmbH - Asset Deal',
-          dealDescription: 'Insolvency proceeding data room',
-          adminEmail: 'admin@test-company.de',
+          dealName: 'New Data Room',
+          dealDescription: 'Data room for transaction',
+          adminEmail: 'admin@example.com',
           companyLogo: '',
           primaryColor: '#1e40af',
           watermarkEnabled: true,
@@ -194,16 +188,23 @@ export default function Settings() {
         };
         
         setSettings(defaultSettings);
-        await handleSaveSettings();
         
         toast.dismiss(toastId);
-        showSuccessToast('All data reset successfully');
+        showSuccessToast('Data room reset successfully');
         
-        // Show initialization wizard
-        setShowInitWizard(true);
+        // Trigger global reset to refresh all components
+        triggerGlobalReset();
+        
+        // Show initialization wizard after a short delay
+        setTimeout(() => {
+          setShowInitWizard(true);
+        }, 500);
+        
       } catch (error) {
-        console.error('Failed to reset settings:', error);
-        showErrorToast('Failed to reset settings');
+        console.error('Failed to reset data room:', error);
+        showErrorToast('Failed to reset data room');
+      } finally {
+        setIsResetting(false);
       }
     }
   };

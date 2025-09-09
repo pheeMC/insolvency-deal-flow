@@ -113,6 +113,35 @@ export const supabaseSettingsService = {
     return mapDatabaseToApi(data);
   },
 
+  async resetAllData(): Promise<void> {
+    try {
+      // Clear all data tables in the correct order to handle dependencies
+      const clearOperations = [
+        supabase.from('activity_logs').delete().neq('id', ''),
+        supabase.from('bids').delete().neq('id', ''), 
+        supabase.from('qa_threads').delete().neq('id', ''),
+        supabase.from('timeline_events').delete().neq('id', ''),
+        supabase.from('documents').delete().neq('id', ''),
+        // Reset deal_settings to defaults
+        supabase.from('deal_settings').delete().neq('id', '')
+      ];
+
+      const results = await Promise.allSettled(clearOperations);
+      
+      // Log any errors but don't fail the entire operation
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.warn(`Failed to clear table ${index}:`, result.reason);
+        }
+      });
+
+      console.log('All data tables cleared successfully');
+    } catch (error) {
+      console.error('Failed to reset data:', error);
+      throw error;
+    }
+  },
+
   async createBackup(): Promise<{ url: string }> {
     // Create backup by exporting all data
     const backupData = {

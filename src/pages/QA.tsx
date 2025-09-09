@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabaseQAService as qaService } from '@/services/supabaseQAService';
 import { QAThread } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 import { NewQuestionModal } from '@/components/modals/NewQuestionModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/select';
 
 export default function QA() {
+  const { resetCounter } = useDataRoom();
   const [threads, setThreads] = useState<QAThread[]>([]);
   const [selectedThread, setSelectedThread] = useState<QAThread | null>(null);
   const [newQuestion, setNewQuestion] = useState('');

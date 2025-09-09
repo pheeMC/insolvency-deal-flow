@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import {
   Home,
   FolderOpen,
@@ -81,6 +82,7 @@ const getNavItems = (documentFolders: any[]): NavItem[] => [
 
 export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
   const location = useLocation();
+  const { resetCounter } = useDataRoom();
   const [expandedItems, setExpandedItems] = useState<string[]>(['/documents']);
   const [dealSettings, setDealSettings] = useState({
     phase: 'NBO',
@@ -112,7 +114,7 @@ export const VDRSidebar = ({ collapsed }: VDRSidebarProps) => {
     };
 
     loadDealSettings();
-  }, []);
+  }, [resetCounter]); // Reload when data is reset
 
   const toggleExpanded = (href: string) => {
     setExpandedItems(prev =>

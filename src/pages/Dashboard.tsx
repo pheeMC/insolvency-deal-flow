@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -25,6 +26,7 @@ import { supabaseQAService } from '@/services/supabaseQAService';
 import { DashboardStats, RecentActivity, DealMetrics, DealSettings, TimelineEvent } from '@/types/api';
 
 export default function Dashboard() {
+  const { resetCounter } = useDataRoom();
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [dealMetrics, setDealMetrics] = useState<DealMetrics | null>(null);
@@ -63,7 +65,7 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [resetCounter]); // Refetch data when resetCounter changes
 
   const stats = dashboardStats && dashboardStats.changeMetrics ? [
     {

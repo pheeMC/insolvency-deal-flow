@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabaseBidsService as bidsService } from '@/services/supabaseBidsService';
 import { Bid as ApiBid } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 import { BidModal } from '@/components/modals/BidModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -142,7 +143,8 @@ const mockBids: LocalBid[] = [
   },
 ];
 
-export default function Bids() {
+function Bids() {
+  const { resetCounter } = useDataRoom();
   const [bids, setBids] = useState<ApiBid[]>([]);
   const [selectedBid, setSelectedBid] = useState<LocalBid | null>(null);
   const [showComparison, setShowComparison] = useState(false);
@@ -605,3 +607,5 @@ export default function Bids() {
     </div>
   );
 }
+
+export default Bids;

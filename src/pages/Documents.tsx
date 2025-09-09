@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { documentsService } from '@/services/supabaseDocumentsService';
 import { Document } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 import { DocumentUploadModal } from '@/components/modals/DocumentUploadModal';
 import { FolderModal } from '@/components/modals/FolderModal';
@@ -37,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function Documents() {
+  const { resetCounter } = useDataRoom();
   const { folder } = useParams();
   const [searchParams] = useSearchParams();
   const currentFolderId = searchParams.get('folder');
@@ -64,7 +66,7 @@ export default function Documents() {
     };
 
     fetchDocuments();
-  }, [currentFolderId]);
+  }, [resetCounter, currentFolderId]); // Refetch when data is reset or folder changes
 
   const isInFolder = !!currentFolderId;
   const currentFolder = documents.find(f => f.id === currentFolderId);

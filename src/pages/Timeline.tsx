@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabaseTimelineService as timelineService } from '@/services/supabaseTimelineService';
 import { TimelineEvent as ApiTimelineEvent } from '@/types/api';
 import { showSuccessToast, showErrorToast, showLoadingToast } from '@/components/ui/toast-notifications';
+import { useDataRoom } from '@/contexts/DataRoomContext';
 import { toast } from 'sonner';
 import { TimelineEventModal } from '@/components/modals/TimelineEventModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,7 +128,8 @@ const timelineEvents: LocalTimelineEvent[] = [
   },
 ];
 
-export default function Timeline() {
+function Timeline() {
+  const { resetCounter } = useDataRoom();
   const [events, setEvents] = useState<ApiTimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventModalOpen, setEventModalOpen] = useState(false);
@@ -147,7 +149,7 @@ export default function Timeline() {
     };
 
     fetchEvents();
-  }, []);
+  }, [resetCounter]); // Refetch when data is reset
 
   // Use API events if available, otherwise fall back to mock data
   const displayEvents = events.length > 0 ? events : timelineEvents;
@@ -454,3 +456,5 @@ export default function Timeline() {
     </div>
   );
 }
+
+export default Timeline;
